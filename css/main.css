@@ -1,3 +1,23 @@
+
+/*custom styles*/
+body{
+    /*font-family: 'Inconsolata';*/
+    font-family: 'Roboto', sans-serif;
+}
+
+.big-icon {
+    font-size: 98px;
+}
+.laptop-text{
+    margin-top: -2.6em;
+    margin-left: 1.2em;
+}
+.call-to-action-icon, .call-to-action-icon:hover {
+    color:black;
+    text-decoration:none;
+}
+
+
 /*! HTML5 Boilerplate v5.2.0 | MIT License | https://html5boilerplate.com/ */
 
 /*
