@@ -5,6 +5,20 @@ body{
     font-family: 'Roboto', sans-serif;
 }
 
+
+#outerbox {
+    width:100%;
+    position:absolute; /* to place it somewhere on the screen */
+    top:130px;         /* free space at top */
+    bottom:0px;        /* makes it lock to the bottom */
+}
+#innerbox {
+    width:100%;
+    position:absolute;              
+    min-height:100% !important; /* browser fill */
+    height:auto;                /*content fill */
+}
+
 .big-icon {
     font-size: 98px;
 }
