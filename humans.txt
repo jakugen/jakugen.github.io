@@ -3,13 +3,15 @@
 
 # TEAM
 
-    <name> -- <role> -- <twitter>
+    Gennadi Jakutin
 
 # THANKS
 
-    <name>
+    Html5 Boilerplate for app layout and templates
+    Twitter Bootstrap for grid system
+    Font Awesome for icons 
 
 # TECHNOLOGY COLOPHON
 
     CSS3, HTML5
-    Apache Server Configs, jQuery, Modernizr, Normalize.css
+    jQuery, Modernizr, Normalize.css
