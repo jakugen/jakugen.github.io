@@ -9,15 +9,19 @@ body{
     font-size: 98px;
 }
 .laptop-text{
-    margin-top: -2.5em;
-    margin-left: 1.15em;
 }
 .call-to-action-icon, .call-to-action-icon:hover {
     color:black;
     text-decoration:none;
 }
 .centered-bordered{
-    border-style:solid;border-width:2px;min-width:295px;max-width:295px;position:fixed;left:50%;margin-left:-147.5px;height:105px;margin-top:2em;
+    min-width:295px;
+    max-width:295px;
+    position:fixed;
+    left:50%;
+    margin-left:-147.5px;
+    height:105px;
+    margin-top:2em;
 }
 
 /*! HTML5 Boilerplate v5.2.0 | MIT License | https://html5boilerplate.com/ */

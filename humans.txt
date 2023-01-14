@@ -8,10 +8,8 @@
 # THANKS
 
     Html5 Boilerplate for app layout and templates
-    Twitter Bootstrap for grid system
     Font Awesome for icons 
 
 # TECHNOLOGY COLOPHON
 
-    CSS3, HTML5
-    jQuery, Modernizr, Normalize.css
+    HTML5
