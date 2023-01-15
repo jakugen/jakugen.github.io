@@ -14,7 +14,7 @@ body{
     color:black;
     text-decoration:none;
 }
-.centered-bordered{
+.centered {
     min-width:295px;
     max-width:295px;
     position:fixed;
