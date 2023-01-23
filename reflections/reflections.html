@@ -31,15 +31,29 @@
         <div class="container">
             <div class="centered">
                     <div style="margin:0;">
-                        <div style="margin:0;padding:0;">
-                            
+                        <section style="margin:0;padding:0;">
                         </div>
                     </div>
             </div>
         </div>
         
-        <script>
-            /*ajax is here*/
+        <script type="text/javascript">
+            fetch('/reflections')
+                .then((response) => response.json())
+                .then((reflections) => reflections.reflections.forEach(element => {
+                    const sect = document.querySelector('section');
+                    const para = document.createElement('p');
+                    para.appendChild(document.createElement("span")).innerHTML = element.date;
+                    para.appendChild(document.createElement("span")).innerHTML = "<br>";
+
+                    para.appendChild(document.createElement("span")).innerHTML = element.name;
+                    para.appendChild(document.createElement("span")).innerHTML = "<br>";
+
+                    para.appendChild(document.createElement("span")).innerHTML = element.content;
+                    para.appendChild(document.createElement("span")).innerHTML = "<br>";
+
+                    sect.appendChild(para);
+                }));
         </script>
     </body>
 </html>
