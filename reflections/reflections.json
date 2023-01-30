@@ -2,8 +2,8 @@
 	"reflections": [
 		{
 			"name": "naming-is-matter",
-			"content": "some content is here",
-			"date": "1/1/001"
+			"content": "<span>\r\n    <p>Consider code block, can you spot an error in a second given its wrapped up\r\n    in business logic details?<\/p>\r\n    \r\n    <code>\r\n        Dictionary<int, Espresso> espressos = new Dictionary<int, Espresso>(); <br>\r\n        void ProcessCoffee() <br>\r\n        {<br>\r\n            ...<br>\r\n        }\r\n    <\/code><br><br>\r\n\r\n    <p>I couldn't and spent too much time figuring out trivial bug.\r\n    What if I would get this block to work with instead.<\/p>\r\n\r\n    <code>\r\n        Dictionary<int, Espresso> lungos = new Dictionary<int, Espresso>();<br>\r\n        void ProcessCoffee() <br>\r\n        {<br>\r\n            ...<br>\r\n        }\r\n    <\/code><br><br>\r\n\r\n    <p>Much easier to spot.<\/p>\r\n\r\n    <p><b>Naming is matter.<\/b><\/p>\r\n    <p>Name things as best (closest to reality) as you can as soon as you can.<\/p>\r\n\r\n<\/span>",
+			"date": "1/30/2023"
 		},
 		{
 			"name": "klein-bottle",
