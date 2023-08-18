@@ -1,6 +1,11 @@
 {
 	"reflections": [
 		{
+			"name": "what-problem-solving",
+			"content": "<span>\r\n    <p>\r\n        Found this gem. \r\n    <\/p>\r\n    <code>\r\n        protected void WriteEventLogError(string message)<br\/>\r\n        {<br\/>\r\n            &nbsp;&nbsp;if( _logger != null && string.IsNullOrEmty(message))<br\/>\r\n            &nbsp;&nbsp;{<br\/>\r\n                &nbsp;&nbsp;&nbsp;&nbsp;_logger.LogError(string.Format(\"{0} - {1}\", this.Name, message));<br\/>\r\n            &nbsp;&nbsp;}<br\/>\r\n        }\r\n    <\/code>\r\n    <p>\r\n        One collegue of mine had a habbit to challenge the team with this question\r\n        if we can't agree on something - <i>What problem we are trying to solve?<\/i><br\/>\r\n        Code block above doesn't log empty strings but why? What's bad about \r\n        logging empty string if client calls it with such parameter?\r\n    <\/p>\r\n    <p>\r\n        In addition to hide the possible bug in logger's client, this code contains the bug by itself,\r\n        effectively preventing errors to be logged.\r\n    <\/p>\r\n    <p>\r\n        I think every line of code deserves at least little thought on why we need it in first place.\r\n    <\/p>\r\n<\/span>",
+			"date": "08/18/2023"
+		},
+		{
 			"name": "to-stop-is-suggestion",
 			"content": "<span>\r\n    <p>\r\n        As a great procrastinator\/dreamer I find this advice to be particularly useful.\r\n    <\/p>\r\n    <p>\r\n        <b>\r\n            When brain asks to resign or stop - it is merely <i>suggestion<\/i>.\r\n        <\/b> \r\n    <\/p>\r\n    <p>\r\n        I am able to answer both yes or no to the suggestion. With quality of neuroplasticity brain will be what I tell\/want it to be.\r\n    <\/p>\r\n    <p>\r\n        How this applies to neural networks? Do they have such parts which can control other parts? Do they have capacity to modify itself?\r\n    <\/p>\r\n<\/span>",
 			"date": "2/1/2023"
