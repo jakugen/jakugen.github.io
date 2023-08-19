@@ -4,10 +4,8 @@ body{
 
 .centered {
     min-width:295px;
-    max-width:80%;
-    position:fixed;
-    left:10%;
     height:100%;
-    margin-top:2em;
+    margin-left:1em;
+    margin-right:1em;
     overflow: scroll;
 }
