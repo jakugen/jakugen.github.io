@@ -1,0 +1,13 @@
+body{
+    font-family: 'Inconsolata';
+}
+
+.centered {
+    min-width:295px;
+    max-width:80%;
+    position:fixed;
+    left:10%;
+    height:100%;
+    margin-top:2em;
+    overflow: scroll;
+}
