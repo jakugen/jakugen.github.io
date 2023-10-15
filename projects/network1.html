@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Neural Network 1 Recognize Handwritten Digits | Gennadi Jakutin</title>
+        <meta charset="utf-8">
+        <meta name="description" content="Neural Network 1 recognize handwritten digits | Gennadi Jakutin">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="apple-touch-icon" href="apple-touch-icon.png">
+        <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+        <link href='css/main.css' rel='stylesheet' type='text/css'>
+    </head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-57ZNQZFHE4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-57ZNQZFHE4');
+    </script>
+    <body>
+        <div class="container centered">
+            <canvas id='canvas' class="canvas" style="border: solid 1px black" width='500' height='500'></canvas>
+            <hr />
+            <input id="recognize_btn" type="button" value="Recognize" />
+            <input id="clear_btn" type="button" value="Clear" />
+            <hr />
+            <h1 id="answer">-</h1>
+        </div>
+        
+        <script type="text/javascript">
+            (function() {
+                let canvas = document.getElementById('canvas');
+                let is_painting = false;
+
+                window.onmousedown = () => is_painting = !is_painting;
+                window.onmousemove = (e) => {
+                    let rectangle_area = canvas.getBoundingClientRect();
+                    if (is_painting) {
+                        canvas.getContext('2d')
+                            .fillRect(e.x - rectangle_area.left, e.y - rectangle_area.top, 25, 25);
+                    }
+                }
+                window.onmouseup = () => is_painting = false;
+
+                document.getElementById('recognize_btn').onclick = recognize;
+                document.getElementById('clear_btn').onclick = clear;
+
+                function recognize() {
+                    let pixels = get_28x28_grayscale_pixels();
+                    let answer = ask_network(pixels);
+                    document.getElementById('answer').innerHTML = answer;
+                }
+
+                function get_28x28_grayscale_pixels() {
+                    let canvas_28 = document.createElement("canvas");
+                    canvas_28.width = 28;
+                    canvas_28.height = 28;
+                    let canvas_28_context = canvas_28.getContext('2d');
+                    canvas_28_context.drawImage(canvas, 0, 0, 28, 28);
+
+                    let canvas_28_rgb_pixel_data = canvas_28_context.getImageData(0, 0, 28, 28).data;
+                    let grayscale_pixel_values = [];
+                    for (let i = 0; i < canvas_28_rgb_pixel_data.length; i += 4) {
+                        let pixel_value = 0;
+                        if (canvas_28_rgb_pixel_data[i + 3] === 255) {
+                            pixel_value = 1;
+                        }
+
+                        grayscale_pixel_values.push(pixel_value);
+                    }
+
+                    return grayscale_pixel_values;
+                }
+
+                function ask_network(data_array) {
+                    console.log(JSON.stringify(data_array));
+
+                    return -1;
+                }
+
+                function clear() {
+                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                }
+            })();
+        </script>
+    </body>
+</html>
