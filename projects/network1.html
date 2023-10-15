@@ -75,11 +75,29 @@
                 function ask_network(data_array) {
                     console.log(JSON.stringify(data_array));
 
+                    post('/network1', { 
+                        digit: data_array
+                    }).then((data) => {
+                        console.log(data);
+                    });
+
                     return -1;
                 }
 
                 function clear() {
                     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                }
+
+                async function post(url, data) {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(data),
+                    });
+
+                    return response.json();
                 }
             })();
         </script>
