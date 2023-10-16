@@ -45,9 +45,9 @@
                 document.getElementById('recognize_btn').onclick = recognize;
                 document.getElementById('clear_btn').onclick = clear;
 
-                function recognize() {
+                async function recognize() {
                     let pixels = get_28x28_grayscale_pixels();
-                    let answer = ask_network(pixels);
+                    let answer = await ask_network(pixels);
                     document.getElementById('answer').innerHTML = answer;
                 }
 
@@ -73,15 +73,11 @@
                 }
 
                 function ask_network(data_array) {
-                    console.log(JSON.stringify(data_array));
-
-                    post('/network1', { 
+                    return post('/network1', { 
                         digit: data_array
                     }).then((data) => {
-                        console.log(data);
+                        return data.result;
                     });
-
-                    return -1;
                 }
 
                 function clear() {
