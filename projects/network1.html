@@ -19,7 +19,7 @@
     </script>
     <body>
         <div class="container centered">
-            <canvas id='canvas' class="canvas" style="border: solid 1px black" width='500' height='500'></canvas>
+            <canvas id='canvas' class="canvas" style="border: solid 1px black" width='350' height='350'></canvas>
             <hr />
             <img id="img_28x28">
             <hr />
@@ -35,14 +35,40 @@
                 let is_painting = false;
 
                 window.onmousedown = () => is_painting = !is_painting;
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    is_painting = !is_painting;
+                }, false);
+
                 window.onmousemove = (e) => {
                     let rectangle_area = canvas.getBoundingClientRect();
                     if (is_painting) {
                         canvas.getContext('2d')
-                            .fillRect(e.x - rectangle_area.left, e.y - rectangle_area.top, 25, 25);
+                            .fillRect(
+                                e.x - rectangle_area.left, 
+                                e.y - rectangle_area.top, 
+                                15, 15
+                            );
                     }
                 }
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    let rectangle_area = canvas.getBoundingClientRect();
+                    if (is_painting) {
+                        canvas.getContext('2d')
+                            .fillRect(
+                                e.touches[0].clientX - rectangle_area.left, 
+                                e.touches[0].clientY - rectangle_area.top, 
+                                15, 15
+                        );
+                    }
+                }, false);
+
                 window.onmouseup = () => is_painting = false;
+                canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    is_painting = false;
+                }, false);
 
                 document.getElementById('recognize_btn').onclick = recognize;
                 document.getElementById('clear_btn').onclick = clear;
