@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">The Book of Jakugen</a></li><li class="chapter-item expanded "><a href="thoughts.html"><strong aria-hidden="true">1.</strong> Thoughts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="to_log_or_not_to_log.html"><strong aria-hidden="true">1.1.</strong> To log or not to log</a></li><li class="chapter-item expanded "><a href="to_stop_is_suggestion.html"><strong aria-hidden="true">1.2.</strong> To stop is suggestion</a></li><li class="chapter-item expanded "><a href="naming_is_matter.html"><strong aria-hidden="true">1.3.</strong> Naming is matter</a></li></ol></li><li class="chapter-item expanded "><a href="projects.html"><strong aria-hidden="true">2.</strong> Projects</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="nn_1.html"><strong aria-hidden="true">2.1.</strong> First neural net</a></li></ol></li><li class="chapter-item expanded "><a href="stories.html"><strong aria-hidden="true">3.</strong> Stories</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="ghosts_of_ancient_worlds.html"><strong aria-hidden="true">3.1.</strong> Ghosts of ancient worlds</a></li><li class="chapter-item expanded "><a href="evolution.html"><strong aria-hidden="true">3.2.</strong> Evolution</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">The Book of Jakugen</a></li><li class="chapter-item expanded affix "><a href="nn_1.html">First neural network</a></li><li class="chapter-item expanded affix "><a href="to_log_or_not_to_log.html">To log or not to log</a></li><li class="chapter-item expanded affix "><a href="to_stop_is_suggestion.html">To stop is suggestion</a></li><li class="chapter-item expanded affix "><a href="naming_is_matter.html">Naming is matter</a></li><li class="chapter-item expanded affix "><a href="ghosts_of_ancient_worlds.html">Ghosts of ancient worlds</a></li><li class="chapter-item expanded affix "><a href="evolution.html">Evolution</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -172,17 +172,27 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="what-is-the-book-of-jakugen"><a class="header" href="#what-is-the-book-of-jakugen">What is The Book of Jakugen</a></h1>
-<p>Semi-random snippets of thoughts, observations and questions to the future self.</p>
-<p>Notes about projects I am doing to learn/explore things.</p>
+                        <h1 id="what-is-this"><a class="header" href="#what-is-this">What is this</a></h1>
+<p>Pseudorandom snippets of thoughts, reflections and questions to the future self.</p>
+<p>Notes about stuff I am doing to learn/explore things.</p>
 <p>Just simple/short stories.</p>
+<p>Order is chronological.</p>
 <p> </p>
 <blockquote>
 <p>&quot;Epistula non erubescit&quot;</p>
 <p>                         -Cicerone</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="thoughts"><a class="header" href="#thoughts">Thoughts</a></h1>
-<p>Semi-random snippets of thoughts, observations and questions to the future self.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="first-neural-network-created"><a class="header" href="#first-neural-network-created">First neural network created</a></h1>
+<p>Of course, the first <em>self</em> made neural network must be the one that recognizes handwritten digits.</p>
+<p>Armed with <a href="http://neuralnetworksanddeeplearning.com/index.html">Neural Networks and Deep Learning</a> textbook 
+and <a href="https://doc.rust-lang.org/stable/book/title-page.html">The Rust Programming Language</a> book
+I slowly converted the first chapter code from Python to Rust.</p>
+<p>Got little understanding of sigmoid, structure of network layers, gradient descent and ndarray crate.</p>
+<p>The shown efficiency is 96.5% against mnist dataset but in practice it <del>doesn't recognize shit</del> is not reliable.</p>
+<p>Hopefully I can improve it with the help of knowledge from the following three chapters.</p>
+<p>The thing can be <em>challenged</em> <a href="https://gennadijakutin.me/projects/network1.html">here</a>.</p>
+<p> </p>
+<p><em>10/29/2023</em></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="to-log-or-not-to-log"><a class="header" href="#to-log-or-not-to-log">To log or not to log</a></h1>
 <p>Found this gem.</p>
 <pre><code>protected void WriteEventLogError(string message)
@@ -247,22 +257,6 @@ void ValidateReceipes(IEnumerable recipes)
 <p>Name things as best (closest to reality) as you can as soon as you can.</p>
 <p> </p>
 <p><em>1/30/2023</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="projects"><a class="header" href="#projects">Projects</a></h1>
-<p>Notes about projects I am doing to learn/explore things.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="first-neural-network-created"><a class="header" href="#first-neural-network-created">First neural network created</a></h1>
-<p>Of course, the first <em>self</em> made neural network must be the one that recognizes handwritten digits.</p>
-<p>Armed with <a href="http://neuralnetworksanddeeplearning.com/index.html">Neural Networks and Deep Learning</a> textbook 
-and <a href="https://doc.rust-lang.org/stable/book/title-page.html">The Rust Programming Language</a> book
-I slowly converted the first chapter code from Python to Rust.</p>
-<p>Got little understanding of sigmoid, structure of network layers, gradient descent and ndarray crate.</p>
-<p>The shown efficiency is 96.5% against mnist dataset but in practice it <del>doesn't recognize shit</del> is not reliable.</p>
-<p>Hopefully I can improve it with the help of knowledge from the following three chapters.</p>
-<p>The thing can be <em>challenged</em> <a href="https://gennadijakutin.me/projects/network1">here</a>.</p>
-<p> </p>
-<p><em>10/29/2023</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="stories"><a class="header" href="#stories">Stories</a></h1>
-<p>&quot;Epistula non erubescit&quot; - Cicerone.</p>
-<p>Just simple/short stories.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="Призраки-древних-миров"><a class="header" href="#Призраки-древних-миров">Призраки древних миров</a></h1>
 <p>Одинокая фигура человека показалась из-за горного гребня. Слегка согнувшись под тяжестью рюкзака фигура медленно двигалась, шаг за шагом преодолевая плоский траверс где то в горах Норвегии. Альпинист двигался на север, немного отклоняясь в западную сторону. Высокая каменная стенка вдоль которой он шел отбрасывала длинную тень, накрывая его с головой. Приближался полдень и альпинист шел без привала уже добрых 3 часа, но останавливаться не хотелось, так здорово было просто идти, дышать легким горным воздухом, улыбаться погоде и самому себе. К тому же, из-за тени отбрасываемой скалой, наст в заснеженных местах еще держался и идти было комфортно. Остановившись и глотнув воды из фляги, альпинист в очередной раз поразился вкусу этой воды. Конечно вода не имеет вкуса, но здесь, в местных ручьях, вода как будто соткана из каких то других молекул. Буду идти пока солнце не поднимется и тень от скалы сузиться до тонкой полосы, решил он.</p>
 <p>Пройдя еще два часа, Саша, наконец, остановился на привал, выбрав себе подходящее местечко на солнце. Прислонившись к высокому рюкзаку спиной, он просто сидел, глядя туда откуда пришел. Километров 15 дал за раз, хорошее начало, и погода шикарная, довольно думал Саша. Так, хорошо, надо поесть, отдохнуть, свериться с картой и наверное получится пройти еще десяточку до вечера. Быстро поднявшись, Саша почувствовал свои забившиеся ноги, еще не втянулся, натру согревающей мазью перед сном и завтра буду как новенький, строил он планы в своей голове. Собрав снега, альпинист сделал себе жирного горячего супа на примусе и закусил вяленым мясом. Калории здесь дорогие, все надо тащить на себе, очень важно не торопиться и не расходовать силы быстро. Саша в силу своего характера был слегка тороплив, но зная об этой своей черте, умел себя успокоить, это марафон, а не спринт, любил повторять он. К тому же в этот раз, поход был запланирован самым длинным из всех. 220 км за 12 дней по горной местности с огромной выкладкой - это не шутки. В этот раз рюкзак был такой тяжелый, что приходилось слегка наклонятся вниз при ходьбе, но как же приятно было ощущать эту тяжесть, зная что там те самые калории, что позволят ему совершить свой маленький подвиг. Каждый килограмм рюкзака грел его изнутри. Другое дело, что вставать приходилось вместе с рюкзаком, ставя его вертикально, поочередно просовывая руки, застегивая дополнительную лямку на груди и как будто прыгать вперед. Давалось это Саше не просто, он не отличался богатырским телосложением, но сколько себя помнил всегда был жилистый как перекачавшийся культурист.</p>
