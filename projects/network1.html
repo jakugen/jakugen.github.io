@@ -19,7 +19,7 @@
     </script>
     <body>
         <div class="container centered">
-            <canvas id='canvas' class="canvas" style="border: solid 1px black" width='112' height='112'></canvas>
+            <canvas id='canvas' class="canvas" style="border: solid 1px black" width='350' height='350'></canvas>
             <hr />
             <img id="img_28x28">
             <hr />
@@ -47,7 +47,7 @@
                             .fillRect(
                                 e.x - rectangle_area.left, 
                                 e.y - rectangle_area.top, 
-                                5, 5
+                                15, 15
                             );
                     }
                 }
@@ -59,7 +59,7 @@
                             .fillRect(
                                 e.touches[0].clientX - rectangle_area.left, 
                                 e.touches[0].clientY - rectangle_area.top, 
-                                5, 5
+                                15, 15
                         );
                     }
                 }, false);
