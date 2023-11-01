@@ -47,7 +47,7 @@
                             .fillRect(
                                 e.x - rectangle_area.left, 
                                 e.y - rectangle_area.top, 
-                                15, 15
+                                40, 40
                             );
                     }
                 }
@@ -59,7 +59,7 @@
                             .fillRect(
                                 e.touches[0].clientX - rectangle_area.left, 
                                 e.touches[0].clientY - rectangle_area.top, 
-                                15, 15
+                                40, 40
                         );
                     }
                 }, false);
@@ -84,7 +84,7 @@
                     canvas_28.width = 28;
                     canvas_28.height = 28;
                     let canvas_28_context = canvas_28.getContext('2d');
-                    canvas_28_context.drawImage(canvas, 0, 0, 28, 28);
+                    canvas_28_context.drawImage(canvas, 4, 4, 20, 20);
                     document.getElementById('img_28x28').src = canvas_28.toDataURL();
 
                     let canvas_28_rgb_pixel_data = canvas_28_context.getImageData(0, 0, 28, 28).data;
