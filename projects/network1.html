@@ -7,7 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
-        <link href='css/main.css' rel='stylesheet' type='text/css'>
+        <link href='/css/main.css' rel='stylesheet' type='text/css'>
     </head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-57ZNQZFHE4"></script>
@@ -29,104 +29,94 @@
             <h1 id="answer">-</h1>
         </div>
         
-        <script type="text/javascript">
-            (function() {
-                let canvas = document.getElementById('canvas');
-                let is_painting = false;
-
-                window.onmousedown = () => is_painting = !is_painting;
-                canvas.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    is_painting = !is_painting;
-                }, false);
-
-                window.onmousemove = (e) => {
-                    let rectangle_area = canvas.getBoundingClientRect();
-                    if (is_painting) {
-                        canvas.getContext('2d')
-                            .fillRect(
-                                e.x - rectangle_area.left, 
-                                e.y - rectangle_area.top, 
-                                40, 40
-                            );
-                    }
-                }
-                canvas.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    let rectangle_area = canvas.getBoundingClientRect();
-                    if (is_painting) {
-                        canvas.getContext('2d')
-                            .fillRect(
-                                e.touches[0].clientX - rectangle_area.left, 
-                                e.touches[0].clientY - rectangle_area.top, 
-                                40, 40
+        <script type="module">
+            import init, { greet } from "/js/nn101.js";
+            
+            init().then(() => {
+            });
+      
+            function getAnswer() {
+              let networkInput = document.getElementById("network_input").value;
+              var result = greet("WebAssembly", networkInput );
+            }
+      
+            let canvas = document.getElementById('canvas');
+            let is_painting = false;
+      
+            window.onmousedown = () => is_painting = !is_painting;
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                is_painting = !is_painting;
+            }, false);
+      
+            window.onmousemove = (e) => {
+                let rectangle_area = canvas.getBoundingClientRect();
+                if (is_painting) {
+                    canvas.getContext('2d')
+                        .fillRect(
+                            e.x - rectangle_area.left, 
+                            e.y - rectangle_area.top, 
+                            40, 40
                         );
+                }
+            }
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                let rectangle_area = canvas.getBoundingClientRect();
+                if (is_painting) {
+                    canvas.getContext('2d')
+                        .fillRect(
+                            e.touches[0].clientX - rectangle_area.left, 
+                            e.touches[0].clientY - rectangle_area.top, 
+                            40, 40
+                    );
+                }
+            }, false);
+      
+            window.onmouseup = () => is_painting = false;
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                is_painting = false;
+            }, false);
+      
+            document.getElementById('recognize_btn').onclick = recognize;
+            document.getElementById('clear_btn').onclick = clear;
+      
+            async function recognize() {
+                let pixels = get_28x28_grayscale_pixels();
+                let pixelsString = JSON.stringify(pixels);
+                var answer = greet("WebAssembly", pixelsString );
+      
+                document.getElementById('answer').innerHTML = answer;
+            }
+      
+            function get_28x28_grayscale_pixels() {
+                let canvas_28 = document.createElement("canvas");
+                canvas_28.width = 28;
+                canvas_28.height = 28;
+                let canvas_28_context = canvas_28.getContext('2d');
+                canvas_28_context.drawImage(canvas, 4, 4, 20, 20);
+                document.getElementById('img_28x28').src = canvas_28.toDataURL();
+      
+                let canvas_28_rgb_pixel_data = canvas_28_context.getImageData(0, 0, 28, 28).data;
+                let grayscale_pixel_values = [];
+                for (let i = 0; i < canvas_28_rgb_pixel_data.length; i += 4) {
+                    let pixel_value = 0;
+                    if (canvas_28_rgb_pixel_data[i + 3] === 255) {
+                        pixel_value = 1;
                     }
-                }, false);
-
-                window.onmouseup = () => is_painting = false;
-                canvas.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    is_painting = false;
-                }, false);
-
-                document.getElementById('recognize_btn').onclick = recognize;
-                document.getElementById('clear_btn').onclick = clear;
-
-                async function recognize() {
-                    let pixels = get_28x28_grayscale_pixels();
-                    let answer = await ask_network(pixels);
-                    document.getElementById('answer').innerHTML = answer;
+      
+                    grayscale_pixel_values.push(pixel_value);
                 }
-
-                function get_28x28_grayscale_pixels() {
-                    let canvas_28 = document.createElement("canvas");
-                    canvas_28.width = 28;
-                    canvas_28.height = 28;
-                    let canvas_28_context = canvas_28.getContext('2d');
-                    canvas_28_context.drawImage(canvas, 4, 4, 20, 20);
-                    document.getElementById('img_28x28').src = canvas_28.toDataURL();
-
-                    let canvas_28_rgb_pixel_data = canvas_28_context.getImageData(0, 0, 28, 28).data;
-                    let grayscale_pixel_values = [];
-                    for (let i = 0; i < canvas_28_rgb_pixel_data.length; i += 4) {
-                        let pixel_value = 0;
-                        if (canvas_28_rgb_pixel_data[i + 3] === 255) {
-                            pixel_value = 1;
-                        }
-
-                        grayscale_pixel_values.push(pixel_value);
-                    }
-
-                    return grayscale_pixel_values;
-                }
-
-                function ask_network(data_array) {
-                    return post('/network1', { 
-                        digit: data_array
-                    }).then((data) => {
-                        return data.result;
-                    });
-                }
-
-                function clear() {
-                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                    document.getElementById('img_28x28').src = '';
-                    document.getElementById('answer').innerHTML = '-';
-                }
-
-                async function post(url, data) {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(data),
-                    });
-
-                    return response.json();
-                }
-            })();
-        </script>
+      
+                return grayscale_pixel_values;
+            }
+      
+            function clear() {
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                document.getElementById('img_28x28').src = '';
+                document.getElementById('answer').innerHTML = '-';
+            }
+          </script>
     </body>
 </html>
