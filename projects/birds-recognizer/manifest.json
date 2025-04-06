@@ -1,0 +1,21 @@
+{
+    "name": "Empty PWA Application",
+    "short_name": "EmptyPWA",
+    "description": "A clean, empty Progressive Web App template.",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#317EFB",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ]
+}

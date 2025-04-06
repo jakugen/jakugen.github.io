@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empty PWA App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <meta name="theme-color" content="#317EFB">
+</head>
+<body>
+    <h1>Welcome to Empty PWA!</h1>
+
+    <button id="micPermission">Enable Microphone</button>
+    <div id="micStatus"></div>
+
+    <div id="recordingControls" style="display: none; margin-top: 20px;">
+        <button id="startRecording">Start Recording</button>
+        <button id="stopRecording" disabled>Stop Recording</button>
+        <div id="recordingStatus"></div>
+        <div id="audioPlayer" style="margin-top: 10px; display: none;">
+            <audio id="audioPlayback" controls></audio>
+            <a id="downloadLink" download="recording.wav" style="display: block; margin-top: 10px;">Download Recording</a>
+        </div>
+    </div>
+
+        <!-- Dataset input for training -->
+        <div id="datasetInputs" style="margin-top: 30px;">
+            <h2>Upload Training Data</h2>
+            <div>
+                <label for="class0Input">Class 0 (e.g., Bird song):</label>
+                <input type="file" id="class0Input" multiple accept="audio/*">
+            </div>
+            <div>
+                <label for="class1Input">Class 1 (e.g., Ambient noise):</label>
+                <input type="file" id="class1Input" multiple accept="audio/*">
+            </div>
+            <button id="trainModelButton" style="margin-top: 10px;">Train Model</button>
+        </div>
+
+        <div id="predictionArea" style="margin-top: 30px;">
+            <h2>Upload File for Prediction</h2>
+            <input type="file" id="predictFileInput" accept="audio/*">
+          </div>
+
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
+    <!-- <script src="app.js"></script> -->
+    <script type="module" src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service Worker Registered!', reg))
+                .catch(err => console.error('Service Worker Registration Failed:', err));
+        }
+    </script>
+</body>
+</html>
