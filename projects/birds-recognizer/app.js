@@ -1,7 +1,7 @@
 import * as featureExtraction from './modules/mfcc.js';
 import * as modelTraining from './modules/training.js';
 
-console.log('Empty PWA Loaded.');
+console.log('Birds Recognizer Loaded.');
 
 // Global variables for recording.
 let mediaRecorder;
