@@ -12,6 +12,28 @@
         body{
             font-family: 'Inconsolata';
         }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .pill-link {
+        display: inline-block;
+        padding: 6px 14px;
+        margin-right: 10px;
+        border-radius: 9999px; /* extra-round shape */
+        background-color: #e74c3c; /* red by default */
+        color: #fff;
+        text-decoration: none;
+        vertical-align: middle;
+    }
+
+    .pill-link.blue {
+        background-color: #3498db;
+    }
+
     </style>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-57ZNQZFHE4"></script>
@@ -23,105 +45,310 @@
     </script>
     <body>
         <h1>Who am I?</h1>
-        <p>
-            I'm Gennadi. 
-            I studied in IATI colledge and in TTU master program
-                and have ~15 years of professional expirience 
-                in the software industry primarly using .Net framework,
-                including .Net 2.0 and .Net 3.5 (Windows Forms applications) certificates.
-            Find more about stuff I built below. 
-            I would be happy to reach out in case of interest or questions.
-        </p>
-        <hr/>
 
-        <h2>Intelometry <i>Aug 2022 - present</i></h2>
-        <i>
-            c#, .net core 6, Blazor, Blazor Server
-        </i>
-        <p>
-            <p>
-                Electrical Facility Manager product (mobile, desktop, web).
-            </p>
-            <p>
-                Blazor UI controls library.
-            </p>
-            <p>
-                PoC for Blazor WebAssembly.
-            </p>
-        </p>
-        <hr/>
+        <nav>
+            <a href="#ai-section" class="pill-link link-left" onclick="showSection('ai-section');">
+                [[Very]Complimentary] AI
+            </a>
+            <a href="#human-section" class="pill-link blue link-right" onclick="showSection('human-section');">
+                Human
+            </a>
+        </nav>
 
-        <h2>Betsson <i>Jan 2022 - Aug 2022</i></h2>
-        <i>
-            .net core, web api, angular
-        </i>
-        <p>
-            Game offering team, mostly dealing with user expirience issues and enabling games for new markets.
-        </p>
-        <hr/>
+        <section id="ai-section" style="display:none;">
+            <h1>Gennadi Jakutin – Professional Profile</h1>
+            <h2>Summary</h2>
+            <p>
+                Gennadi Jakutin is an Estonian software developer with over 15 years of experience in building enterprise software
+                and web applications. He is an expert in Microsoft .NET technologies (C#/.NET) and has applied his skills across
+                various domains, from energy management systems to digital health and online gaming. Jakutin has contributed to
+                notable projects, including winning a Garage48 hackathon in 2013 as part of the PhotoFing team, and he was involved
+                in the early development of the health-tech startup Certific. Colleagues describe him as a passionate and impact-driven
+                professional who thrives in supportive environments. He currently works as a senior software developer at Intelometry,
+                where he continues to lead complex projects and explore new technologies in his field.
+            </p>
 
-        <h2>Codeborne <i>Feb 2021 - Jan 2022</i></h2>
-        <i>java, javascript, spark-java, webview, mockito, guice, amazon-web-services</i>
-        <p>
-            E-Health application for facilitating medical cerifications.
-        </p>
-        <hr/>
+            <h2>Background and Education</h2>
+            <p>
+                Gennadi Jakutin pursued his education in the field of information technology in Estonia. He studied at IATI College
+                and later attended a master’s program at <strong>Tallinn University of Technology (TTU)</strong>. This strong educational
+                foundation in computer science prepared him for a career in software development. Over the years, he has also obtained
+                professional certifications in .NET technologies (including .NET 2.0 and .NET 3.5 for Windows Forms applications),
+                underscoring his formal expertise in Microsoft’s development framework. Combining academic knowledge with practical
+                skill, Jakutin entered the tech industry in the mid-2000s and has since accumulated extensive hands-on experience. With
+                a career spanning about a decade and a half, he has kept his knowledge up to date by continuously learning and adapting
+                to new tools and best practices in the fast-evolving software industry.
+            </p>
 
-        <h2>Intelometry Inc. <i>Sep 2014 - Dec 2020</i></h2>
-        <i>
-            c#, javascript, asp.net-mvc, sql-server, jquery, sass, 
-            entity-framework, twitter-bootstrap-3, kendo-ui, kendo-ui-mvc, shopify,
-            xamarin.forms, azure-notificationhub
-        </i>
-        <p>
+            <h2>Career History</h2>
+            <h3>SQA Partners (2007–2008)</h3>
             <p>
-                Electrical Facility Manager product (mobile, desktop, web).
+                Jakutin began his career at SQA Partners as a software engineer. In this role, he worked on developing an Electronic
+                Data Interchange (EDI) file parser, gaining early experience in software quality and data processing. This early
+                exposure to a quality-assurance oriented environment helped him build a strong foundation in writing reliable software.
             </p>
-            <p>
-                Company web site and
-                    HR web tools (time tracking, client reporting).
-            </p>
-            <p>
-                E-commerce solution for selling loss factors and load profiles.
-            </p>
-        </p>
-        <hr/>
 
-        <h2>Net Group <i>Dec 2012 - March 2013</i></h2>
-        <i>c#, asp.net</i>
-        <p>
-            Meter readings parser system for `iskra` type meters.
-        </p>
-        <hr/>
+            <h3>Semel (2008–2014)</h3>
+            <p>
+                From 2008 to 2014, Jakutin served as a developer at Semel, working on a variety of industrial and transportation-related
+                software projects. Notably, he helped create a dispatch system for taxi companies and built management systems for
+                equipment data (such as tractor loader data) and field service operations. He also implemented an automatic software
+                update solution during this tenure. (During late 2012 to early 2013, Gennadi took a brief stint at Net Group to develop
+                a meter reading parser system for “Iskra” type energy meters, after which he returned to Semel to continue his work.)
+            </p>
 
-        <h2>Semel <i>Sep 2008 - Nov 2012; Apr 2013 - Aug 2014</i></h2>
-        <i>
-            c#, asp.net-mvc, sql-server, sql-server-ce, entity-framework, windows-ce, 
-            compact-framework, microsoft-sync-framework, opennetcf, opennetcf.ioc, wcf, windows-mobile,
-            azure, signalr
-        </i>
-        <p>
+            <h3>Intelometry Inc. (2014–2020; 2022–Present)</h3>
             <p>
-                Dispatch system for taxi companies.
+                Jakutin joined Intelometry Inc. in 2014 as a software developer, a position he held for over six years. At Intelometry
+                (an energy-sector software company), he was a key contributor to several products and internal tools. For example, he
+                worked on an Electrical Facility Manager product deployed across mobile, desktop, and web platforms, developed the
+                company’s web presence and HR web tools (such as time tracking and client reporting systems), and created an e-commerce
+                solution for selling energy data (loss factors and load profiles). In 2020, he briefly departed Intelometry to explore
+                other opportunities; however, he re-joined the company in August 2022. Since returning, he has been focused on
+                modernizing Intelometry’s software stack – implementing a Blazor-based web interface and proof-of-concepts for Blazor
+                WebAssembly – and building a custom Blazor UI component library for the platform. His long association with Intelometry
+                highlights his leadership in the development of complex enterprise systems and his value to the company.
             </p>
-            <p>
-                Management system for data from tractor loader.
-            </p>
-            <p>
-                Input systems for service workers on railroads.
-            </p>
-            <p>
-                Automatic software update solution.
-            </p>
-        </p>
-        <hr/>
 
-        <h2>SQA Partners <i>Feb 2007 - Aug 2008</i></h2>
-        <p>
-            EDI file parser.
-        </p>
-        
+            <h3>Codeborne (2021)</h3>
+            <p>
+                In early 2021, Jakutin worked at Codeborne, a software consultancy known for its extreme programming culture. During
+                his tenure (Feb 2021 – Jan 2022), he was part of a project to develop an e-health application for facilitating medical
+                certifications. In fact, he was involved in the early stages of the startup Certific, which is a digital health
+                platform, through this role. His contribution via Codeborne helped Certific accelerate its product development. This
+                experience gave Jakutin exposure to the health-tech domain and modern cloud-based architectures (the project at
+                Codeborne utilized technologies like Java, Spark, and Amazon Web Services). It also exemplifies his ability to rapidly
+                build and deliver a startup product in a high-paced environment.
+            </p>
+
+            <h3>Betsson Group (2022)</h3>
+            <p>
+                In 2022, Jakutin briefly worked at Betsson Group, an international online gaming company, as a software developer (Jan
+                2022 – Aug 2022). At Betsson, he joined the Game Offering team where he mainly dealt with improving user experience
+                issues and enabling games for new markets. He used .NET Core for back-end services and Angular for front-end interfaces
+                in this role. Although his time at Betsson was under a year, it added to his breadth of industry experience – exposing
+                him to the fast-moving iGaming sector and the importance of scalability and user-centric design in consumer-facing
+                applications. (Throughout his career, Gennadi Jakutin has demonstrated flexibility in moving between industries and tech
+                stacks. He has successfully transitioned from building industrial and energy management systems to health-tech and
+                gaming platforms. This adaptability showcases his strong fundamental skills in software engineering and his quick
+                learning of domain-specific requirements.)
+            </p>
+
+            <h2>Skills and Areas of Expertise</h2>
+            <p>
+                <strong>Full-Stack Software Development:</strong> Jakutin’s core strength lies in full-stack development using C# and
+                the .NET ecosystem. He is proficient in building back-end systems with frameworks like ASP.NET MVC and .NET Core, as
+                well as developing front-end components. Over the years he has worked with technologies such as Windows Forms, ASP.NET
+                Web API, and modern web frameworks like Blazor for rich web UIs. He also has experience with front-end libraries and
+                frameworks including Angular and traditional web tools (JavaScript/TypeScript, HTML/CSS, jQuery, Twitter Bootstrap).
+                This makes him a versatile developer capable of handling both server-side logic and client-side user interface
+                development.
+            </p>
+            <p>
+                <strong>Systems Architecture and Databases:</strong> Through his work on enterprise applications, Jakutin has developed
+                strong skills in systems design and integration. He has implemented microservices and web services (e.g. using RESTful
+                APIs in .NET) and worked with database management systems like Microsoft SQL Server. Many of the projects in his career
+                involved complex data handling – from parsing EDI files to managing real-time data for taxi dispatch and energy
+                consumption analytics – indicating his expertise in data modeling and system architecture. He is also knowledgeable in
+                cloud technologies: for instance, he utilized Microsoft Azure services in some projects and worked with Amazon Web
+                Services during the Certific e-health project. Moreover, he has experience in cross-platform and mobile development
+                (using Xamarin.Forms and even legacy Windows Mobile/CE platforms in earlier projects), showing a broad range of
+                technical competence.
+            </p>
+            <p>
+                <strong>Software Quality and Testing:</strong> One of Jakutin’s notable strengths is his emphasis on software quality.
+                He began his career in a QA-oriented company and has a solid understanding of testing methodologies. He even prepared a
+                presentation on “Writing Test Cases and Test Data for IT”, reflecting his know-how in creating effective test plans.
+                This background means he approaches development with attention to reliability and robustness, often considering edge
+                cases and maintainability. His coding practices are influenced by this quality mindset – for example, working at
+                Codeborne (an extreme programming firm) would have involved test-driven development (TDD) and peer code reviews as part
+                of the culture. Jakutin is skilled in using testing frameworks and tools, and he ensures that the software he builds
+                meets high standards of performance and correctness.
+            </p>
+            <p>
+                <strong>Domain Expertise:</strong> Across different roles, Jakutin has gathered domain-specific knowledge. He is
+                experienced in the Energy sector (developing software for energy facility management and trading of energy data), in
+                Transportation and Logistics (taxi dispatch and field service systems), in Healthcare Tech (medical certification
+                processes through Certific), and in the Online Gaming industry (game delivery and compliance for new markets). This
+                diverse domain expertise enables him to quickly understand business requirements and constraints in new projects, and
+                to communicate effectively with stakeholders from different fields.
+            </p>
+            <p>
+                <strong>Continuous Learning and Emerging Technologies:</strong> Gennadi Jakutin keeps himself up-to-date with emerging
+                trends in technology. He has a personal interest in artificial intelligence and machine learning, and follows recent
+                advancements in those areas. He is also exploring new programming languages – for example, he has been learning Rust,
+                a modern systems programming language, to expand his skill set beyond the traditional .NET world. By familiarizing
+                himself with technologies like Rust and modern web frameworks, he demonstrates a commitment to continuous improvement.
+                This curiosity and willingness to learn ensure that his skill set remains current. It also means he can incorporate
+                new paradigms or tools into his work when they provide an advantage, whether it’s improving performance, security, or
+                developer productivity.
+            </p>
+
+            <h2>Achievements and Notable Public Activity</h2>
+            <p>
+                <strong>Garage48 Hackathon Winner (2013):</strong> A highlight in Jakutin’s early career is his success at the Garage48
+                EMT Appmillionaire Camp hackathon in 2013. He was a member of the PhotoFing team, which took 1st place at the
+                competition. PhotoFing was a project that allowed businesses to create interactive photo collections for sales support,
+                and it was recognized as the winning idea at the event. Jakutin’s team outperformed 19 other pitched ideas,
+                demonstrating innovation and effective teamwork under time pressure.
+            </p>
+            <p>
+                <strong>Contributing to Certific (Digital Health Startup):</strong> In 2021, Gennadi Jakutin played a key role in the
+                development of Certific, an Estonian digital health startup focused on remote medical certifications. Brought in
+                through Codeborne to accelerate Certific’s product development, he worked on building the platform in its early stages.
+                Certific gained prominence for enabling remote COVID-19 testing and certification, and having a skilled developer like
+                Jakutin on the early team was vital to getting the product off the ground quickly.
+            </p>
+            <p>
+                <strong>Knowledge Sharing:</strong> Jakutin maintains a presence in the developer community and shares knowledge with
+                peers. He has a personal website and blog where he posts some of his thoughts on technology, and he is active on GitHub,
+                where he publishes personal projects and experiments with new programming languages. Additionally, as mentioned
+                earlier, he prepared a presentation on software testing best practices, indicating his willingness to educate and
+                mentor others in areas of his expertise.
+            </p>
+
+            <h2>Personality and Working Style</h2>
+            <p>
+                Gennadi Jakutin is often described as passionate, inquisitive, and dedicated in his work. He genuinely loves technology
+                and problem-solving, which is evident from his continuous pursuit of new knowledge. This passion translates into a high
+                level of engagement in the projects he takes on; colleagues have observed that he dives deep into understanding
+                requirements and is enthusiastic about finding the best solutions.
+            </p>
+            <p>
+                <strong>Empowerment and Teamwork:</strong> Jakutin thrives in environments where he can make a meaningful impact and
+                where teamwork is valued. A former teammate remarked on a conversation with him, noting the idea that “if your
+                workplace makes you feel like a hero – that’s the right workplace for you”. This insight reflects Jakutin’s
+                appreciation for workplaces that empower their employees and celebrate their contributions. He carries a positive
+                attitude and often serves as a motivating presence in a team.
+            </p>
+            <p>
+                <strong>Quality-Focused and Methodical:</strong> In terms of working style, Jakutin is detail-oriented and
+                quality-focused. Thanks to his background in software testing, he approaches development tasks systematically. He is
+                known to write well-structured, maintainable code and to incorporate testing and code review processes to ensure high
+                quality outcomes. This methodical approach often saves time by reducing errors and rework.
+            </p>
+            <p>
+                <strong>User-Centric and Adaptive:</strong> Jakutin also has a keen sense for user experience and end-user needs. While
+                at Betsson, he focused on user experience issues in gaming applications, indicating that he pays attention to how
+                software feels for the customer, not just how it functions. He strives to make applications not only reliable but also
+                intuitive and enjoyable to use. Moreover, he adapts his style to the context of the project – in startup settings like
+                Certific, he adopted a fast-paced, iterative approach to quickly deliver features, whereas in enterprise settings like
+                Intelometry, he is more measured, focusing on scalability and long-term maintainability.
+            </p>
+            <p>
+                Colleagues and supervisors characterize Jakutin as a professional who is calm under pressure, communicative, and
+                continuously improving. He is fluent in technical communication and can also explain complex technical concepts to
+                non-technical stakeholders when needed. His willingness to help others and share knowledge (e.g., via blog or internal
+                tech talks) reflects a collaborative spirit.
+            </p>
+        </section>
+    
+        <section id="human-section" style="display:none;">
+            <h1>I'm Gennadi.</h1>
+            <p>
+                I studied in IATI colledge and in TTU master program
+                    and have ~15 years of professional expirience 
+                    in the software industry primarly using .Net framework,
+                    including .Net 2.0 and .Net 3.5 (Windows Forms applications) certificates.
+                Find more about stuff I built below. 
+                I would be happy to reach out in case of interest or questions.
+            </p>
+            <hr/>
+    
+            <h2>Intelometry <i>Aug 2022 - present</i></h2>
+            <i>
+                c#, .net core 6, Blazor, Blazor Server
+            </i>
+            <p>
+                <p>
+                    Electrical Facility Manager product (mobile, desktop, web).
+                </p>
+                <p>
+                    Blazor UI controls library.
+                </p>
+                <p>
+                    PoC for Blazor WebAssembly.
+                </p>
+            </p>
+            <hr/>
+    
+            <h2>Betsson <i>Jan 2022 - Aug 2022</i></h2>
+            <i>
+                .net core, web api, angular
+            </i>
+            <p>
+                Game offering team, mostly dealing with user expirience issues and enabling games for new markets.
+            </p>
+            <hr/>
+    
+            <h2>Codeborne <i>Feb 2021 - Jan 2022</i></h2>
+            <i>java, javascript, spark-java, webview, mockito, guice, amazon-web-services</i>
+            <p>
+                E-Health application for facilitating medical cerifications.
+            </p>
+            <hr/>
+    
+            <h2>Intelometry Inc. <i>Sep 2014 - Dec 2020</i></h2>
+            <i>
+                c#, javascript, asp.net-mvc, sql-server, jquery, sass, 
+                entity-framework, twitter-bootstrap-3, kendo-ui, kendo-ui-mvc, shopify,
+                xamarin.forms, azure-notificationhub
+            </i>
+            <p>
+                <p>
+                    Electrical Facility Manager product (mobile, desktop, web).
+                </p>
+                <p>
+                    Company web site and
+                        HR web tools (time tracking, client reporting).
+                </p>
+                <p>
+                    E-commerce solution for selling loss factors and load profiles.
+                </p>
+            </p>
+            <hr/>
+    
+            <h2>Net Group <i>Dec 2012 - March 2013</i></h2>
+            <i>c#, asp.net</i>
+            <p>
+                Meter readings parser system for `iskra` type meters.
+            </p>
+            <hr/>
+    
+            <h2>Semel <i>Sep 2008 - Nov 2012; Apr 2013 - Aug 2014</i></h2>
+            <i>
+                c#, asp.net-mvc, sql-server, sql-server-ce, entity-framework, windows-ce, 
+                compact-framework, microsoft-sync-framework, opennetcf, opennetcf.ioc, wcf, windows-mobile,
+                azure, signalr
+            </i>
+            <p>
+                <p>
+                    Dispatch system for taxi companies.
+                </p>
+                <p>
+                    Management system for data from tractor loader.
+                </p>
+                <p>
+                    Input systems for service workers on railroads.
+                </p>
+                <p>
+                    Automatic software update solution.
+                </p>
+            </p>
+            <hr/>
+    
+            <h2>SQA Partners <i>Feb 2007 - Aug 2008</i></h2>
+            <p>
+                EDI file parser.
+            </p>
+        </section>
+
         <script type="text/javascript">
+            function showSection(id) {
+                document.getElementById('ai-section').style.display = 'none';
+                document.getElementById('human-section').style.display = 'none';
+                document.getElementById(id).style.display = 'block';
+            }
         </script>
     </body>
 </html>
