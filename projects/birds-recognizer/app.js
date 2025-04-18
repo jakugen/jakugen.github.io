@@ -62,10 +62,9 @@ document.getElementById('stopRecording').addEventListener('click', () => {
 /**
  * Prediction: Extract features from the recording and load a saved model for prediction.
  */
-async function predict(audioBlob) {
+async function predict(audioBlob, model) {
   const mfccFeatures = await featureExtraction.simpleExtractMfccFeatures(audioBlob);
   const inputTensor = tf.tensor2d([mfccFeatures], [1, mfccFeatures.length]);
-  const model = await tf.loadLayersModel('localstorage://my-mfcc-model');
   const prediction = model.predict(inputTensor);
   const predictionArray = await prediction.array();
 
@@ -80,7 +79,11 @@ async function predict(audioBlob) {
 // Wire the "Train Model" button.
 document.getElementById('trainModelButton').addEventListener('click', async () => {
   try {
-    await modelTraining.trainModel();
+    var model = await modelTraining.trainModel();
+    
+    //await saveModelToLocalStorage(model);
+    await saveModelToFile(model);
+    
     alert('Training complete!');
   } catch (err) {
     console.error('Error during training:', err);
@@ -93,8 +96,53 @@ document.getElementById('predictFileInput').addEventListener('change', async (ev
     if(fileList && fileList.length > 0) {
       // Use the first selected file as the audio blob.
       const audioBlob = fileList[0];
-      // Call predict with the selected audio file.
-        let predictedClass = await predict(audioBlob);
-        console.log('Predicted class:', predictedClass);
+      
+      // const model = loadModelFromLocalStorage();
+      const model = await loadModelFromFile(
+        './model/mmfcc-model.json');
+        
+       // Call predict with the selected audio file.
+      let predictedClass = await predict(audioBlob, model);
+
+      console.log('Predicted class:', predictedClass);
+      const statusElement = document.getElementById('modelStatus');
+      statusElement.textContent = 'Predicted class: ' + predictedClass;
     }
   });
+
+async function saveModelToLocalStorage(model) {
+  console.log('Saving model to local storage...');
+  await model.save('localstorage://mfcc-model');
+  await saveModelToFile(model);
+  console.log('Model saved.');
+}
+
+async function loadModelFromLocalStorage() {
+  console.log('Loading model from local storage...');
+  const model = await tf.loadLayersModel('localstorage://mfcc-model');
+  console.log('Model loaded.');
+
+  return model;
+}
+
+async function saveModelToFile(model) {
+  console.log('Saving model to files...');
+  await model.save('downloads://mfcc-model');
+  console.log('Model file download initiated.');
+}
+
+async function loadModelFromFile(modelUrl) {
+  console.log('Loading model from files...');
+  const statusElement = document.getElementById('modelStatus');
+  statusElement.textContent = 'Loading model...';
+  try {
+    const model = await tf.loadLayersModel(modelUrl);
+    console.log('Model loaded successfully from hosted files.');
+    statusElement.textContent = 'Model loaded successfully!';
+    return model;
+  } catch (error) {
+    console.error('Error loading model from files:', error);
+    statusElement.textContent = `Error loading model: ${error.message}`;
+    return null;
+  }
+}

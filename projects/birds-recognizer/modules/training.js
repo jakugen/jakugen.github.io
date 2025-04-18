@@ -97,5 +97,6 @@ export async function trainModel() {
     });
   
     console.log('Training complete!');
-    await model.save('localstorage://my-mfcc-model');
+
+    return model;
   }
