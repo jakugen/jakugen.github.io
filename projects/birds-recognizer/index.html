@@ -28,14 +28,8 @@
         <!-- Dataset input for training -->
         <div id="datasetInputs" style="margin-top: 30px;">
             <h2>Upload Training Data</h2>
-            <div>
-                <label for="class0Input">Class 0 (e.g., Bird song):</label>
-                <input type="file" id="class0Input" multiple accept="audio/*">
-            </div>
-            <div>
-                <label for="class1Input">Class 1 (e.g., Ambient noise):</label>
-                <input type="file" id="class1Input" multiple accept="audio/*">
-            </div>
+            <label for="allFilesInput">Select Training Audio Files (.wav):</label>
+            <input type="file" id="allFilesInput" multiple accept=".wav">
             <button id="trainModelButton" style="margin-top: 10px;">Train Model</button>
         </div>
 

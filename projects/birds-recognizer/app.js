@@ -79,15 +79,19 @@ async function predict(audioBlob, model) {
 // Wire the "Train Model" button.
 document.getElementById('trainModelButton').addEventListener('click', async () => {
   try {
-    var model = await modelTraining.trainModel();
-    
-    //await saveModelToLocalStorage(model);
-    await saveModelToFile(model);
-    
-    alert('Training complete!');
+    // trainModel now returns an object
+    const { model, classMap } = await modelTraining.trainModel();
+
+    // Save the classMap (e.g., to localStorage)
+    localStorage.setItem('classMap', JSON.stringify(Array.from(classMap.entries())));
+
+    // Save the model itself (e.g., to files)
+    await saveModelToFile(model); // Your existing function
+
+    alert('Training complete! Model saved and class map stored.');
   } catch (err) {
     console.error('Error during training:', err);
-    alert('Error during training. See console for details.');
+    alert(`Error during training: ${err.message}. See console for details.`);
   }
 });
 
@@ -99,7 +103,7 @@ document.getElementById('predictFileInput').addEventListener('change', async (ev
       
       // const model = loadModelFromLocalStorage();
       const model = await loadModelFromFile(
-        './model/mmfcc-model.json');
+        './model/mfcc-model.json');
         
        // Call predict with the selected audio file.
       let predictedClass = await predict(audioBlob, model);
