@@ -82,8 +82,9 @@ document.getElementById('trainModelButton').addEventListener('click', async () =
     // trainModel now returns an object
     const { model, classMap } = await modelTraining.trainModel();
 
-    // Save the classMap (e.g., to localStorage)
-    localStorage.setItem('classMap', JSON.stringify(Array.from(classMap.entries())));
+    // --- Save the classMap as a downloadable file ---
+    const classMapJson = JSON.stringify(Array.from(classMap.entries()));
+    downloadTextFile('classMap.json', classMapJson); // Trigger download
 
     // Save the model itself (e.g., to files)
     await saveModelToFile(model); // Your existing function
@@ -117,7 +118,6 @@ document.getElementById('predictFileInput').addEventListener('change', async (ev
 async function saveModelToLocalStorage(model) {
   console.log('Saving model to local storage...');
   await model.save('localstorage://mfcc-model');
-  await saveModelToFile(model);
   console.log('Model saved.');
 }
 
@@ -149,4 +149,23 @@ async function loadModelFromFile(modelUrl) {
     statusElement.textContent = `Error loading model: ${error.message}`;
     return null;
   }
+}
+
+/**
+ * Triggers a browser download for the given text content as a file.
+ * @param {string} filename - The desired name for the downloaded file.
+ * @param {string} text - The text content to save in the file.
+ */
+function downloadTextFile(filename, text) {
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+  console.log(`Download initiated for ${filename}`);
 }
