@@ -13,8 +13,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: {} <start_url> [output_directory]", args[0]);
+        eprintln!("Usage:");
+        eprintln!("  {} <start_url> [output_directory]", args[0]);
+        eprintln!("  {} --convert <directory>", args[0]);
         std::process::exit(1);
+    }
+
+    if args[1] == "--convert" {
+        if args.len() < 3 {
+            eprintln!("Please specify a directory to convert");
+            std::process::exit(1);
+        }
+        return batch_convert_directory(&args[2]);
     }
 
     let start_url = &args[1];
@@ -229,11 +239,14 @@ fn download_file_with_metadata(
         *count
     };
     
-    // Create the formatted filename
-    let filename = format!("{}_{}.mp3", species_name, file_number);
-    let output_path = Path::new(output_dir).join(&filename);
+    // Create the formatted filenames (both MP3 and WAV)
+    let mp3_filename = format!("{}_{}.mp3", species_name, file_number);
+    let wav_filename = format!("{}_{}.wav", species_name, file_number);
     
-    println!("Downloading: {} -> {}", url, output_path.display());
+    let mp3_path = Path::new(output_dir).join(&mp3_filename);
+    let wav_path = Path::new(output_dir).join(&wav_filename);
+    
+    println!("Downloading: {} → {}", url, mp3_path.display());
 
     // Download the file
     let response = client.get(url).send()?;
@@ -243,9 +256,74 @@ fn download_file_with_metadata(
     
     let bytes = response.bytes()?;
     
-    // Save to file
-    let mut file = File::create(output_path)?;
+    // Save to MP3 file
+    let mut file = File::create(&mp3_path)?;
     file.write_all(&bytes)?;
+    
+    // Convert to WAV
+    match convert_using_ffmpeg(&mp3_path, &wav_path) {
+        Ok(_) => {
+            // Optionally remove the MP3 file if you don't need it
+            // std::fs::remove_file(&mp3_path)?;
+        },
+        Err(e) => {
+            println!("Error converting to WAV: {}", e);
+            // Continue without conversion
+        }
+    }
 
-    Ok(filename)
+    Ok(wav_filename) // Return the WAV filename for metadata
+}
+
+fn batch_convert_directory(dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let dir = Path::new(dir_path);
+    if !dir.is_dir() {
+        return Err(format!("{} is not a directory", dir_path).into());
+    }
+    
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        if path.extension().map_or(false, |ext| ext == "mp3") {
+            let stem = path.file_stem().unwrap().to_string_lossy();
+            let wav_path = path.with_extension("wav");
+            
+            println!("Converting: {}", path.display());
+            match convert_using_ffmpeg(&path, &wav_path) {
+                Ok(_) => println!("Conversion successful: {}", wav_path.display()),
+                Err(e) => println!("Error converting {}: {}", path.display(), e),
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+
+fn convert_using_ffmpeg(mp3_path: &Path, wav_path: &Path) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    // Check if ffmpeg is available
+    use std::process::Command;
+    
+    println!("Attempting conversion with ffmpeg: {} → {}", mp3_path.display(), wav_path.display());
+    
+    let output = Command::new("C:\\tools\\ffmpeg.exe")
+        .arg("-y") // Overwrite existing files
+        .arg("-i")
+        .arg(mp3_path)
+        .arg("-acodec")
+        .arg("pcm_s16le") // 16-bit PCM encoding for WAV
+        .arg("-ar")
+        .arg("44100") // Standard sample rate
+        .arg(wav_path)
+        .output()?;
+    
+    if output.status.success() {
+        println!("ffmpeg conversion successful");
+        Ok(true)
+    } else {
+        let error = String::from_utf8_lossy(&output.stderr);
+        println!("ffmpeg conversion failed: {}", error);
+        Ok(false) // Return false but not an error so we can try fallback
+    }
 }
