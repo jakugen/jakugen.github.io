@@ -38,11 +38,7 @@ document.getElementById('startRecording').addEventListener('click', () => {
     document.getElementById('downloadLink').href = audioUrl;
     document.getElementById('audioPlayer').style.display = 'block';
     
-    predict(audioBlob).then((predictedClass) => {
-        console.log('Predicted class:', predictedClass);
-    }).catch(err => {
-        console.error('Error during prediction:', err);
-    });
+    classifyAudioBlob(audioBlob);
   });
   mediaRecorder.start();
   document.getElementById('startRecording').disabled = true;
@@ -84,7 +80,7 @@ document.getElementById('trainModelButton').addEventListener('click', async () =
 
     // --- Save the classMap as a downloadable file ---
     const classMapJson = JSON.stringify(Array.from(classMap.entries()));
-    downloadTextFile('classMap.json', classMapJson); // Trigger download
+    downloadTextFile('class-map.json', classMapJson); // Trigger download
 
     // Save the model itself (e.g., to files)
     await saveModelToFile(model); // Your existing function
@@ -99,21 +95,39 @@ document.getElementById('trainModelButton').addEventListener('click', async () =
 document.getElementById('predictFileInput').addEventListener('change', async (event) => {
     const fileList = event.target.files;
     if(fileList && fileList.length > 0) {
-      // Use the first selected file as the audio blob.
       const audioBlob = fileList[0];
-      
-      // const model = loadModelFromLocalStorage();
-      const model = await loadModelFromFile(
-        './model/mfcc-model.json');
-        
-       // Call predict with the selected audio file.
-      let predictedClass = await predict(audioBlob, model);
-
-      console.log('Predicted class:', predictedClass);
-      const statusElement = document.getElementById('modelStatus');
-      statusElement.textContent = 'Predicted class: ' + predictedClass;
+      await classifyAudioBlob(audioBlob);
     }
   });
+
+async function classifyAudioBlob(audioBlob) {
+  const model = await loadModelFromFile(
+    './model/mfcc-model.json');
+
+  // Call predict with the selected audio file.
+  let predictedClass = await predict(audioBlob, model);
+
+  const classMapResponse = await fetch('./model/class-map.json');
+  if (!classMapResponse.ok) {
+    throw new Error(`HTTP error loading class map! Status: ${classMapResponse.status}`);
+  }
+  const classMap = await classMapResponse.json(); // Expects [[name, index], ...]
+
+  let predictedClassName = 'Unknown';
+  // Convert the predicted class index to the corresponding class name.
+  for (const entry of classMap) {
+    if (entry[1] === predictedClass) {
+      predictedClassName = entry[0]; // Get the name of the class
+      break;
+    }
+  }
+
+  console.log('Predicted class:', predictedClassName);
+  const statusElement = document.getElementById('modelStatus');
+  statusElement.textContent = 'Predicted class: ' + predictedClass;
+
+  displayBirdImage(predictedClassName);
+}
 
 async function saveModelToLocalStorage(model) {
   console.log('Saving model to local storage...');
@@ -168,4 +182,48 @@ function downloadTextFile(filename, text) {
 
   document.body.removeChild(element);
   console.log(`Download initiated for ${filename}`);
+}
+
+/**
+ * Displays an image of the predicted bird.
+ * @param {string} birdClassName - The class name of the bird to display
+ */
+function displayBirdImage(birdClassName) {
+  let container = document.getElementById('birdImageContainer');
+  if (container) {
+    // Apply centering styles to container
+    container.style.display = 'flex';
+    container.style.justifyContent = 'center';
+    container.style.alignItems = 'center';
+    container.style.margin = '20px auto';
+    container.style.width = '100%';
+  }
+
+  // Get or create the image element
+  let birdImage = document.getElementById('birdImage');
+  if (!birdImage) {
+    birdImage = document.createElement('img');
+    birdImage.id = 'birdImage';
+    birdImage.style.width = '250px';
+    birdImage.style.height = '250px';
+    birdImage.style.objectFit = 'cover';
+    birdImage.style.border = '1px solid #ccc';
+    birdImage.style.borderRadius = '4px';
+    birdImage.alt = 'Predicted bird';
+    
+    container.appendChild(birdImage);
+  }
+  
+  // Set the image source based on the class name
+  const imagePath = `./birds/${birdClassName.toLowerCase()}.png`;
+  
+  // Set the src and handle loading errors
+  birdImage.src = imagePath;
+  birdImage.onerror = function() {
+    console.error(`Bird image not found: ${imagePath}`);
+    birdImage.src = './birds/unknown.png';
+    birdImage.alt = 'Bird image not available';
+  };
+  
+  birdImage.style.display = 'block';
 }
