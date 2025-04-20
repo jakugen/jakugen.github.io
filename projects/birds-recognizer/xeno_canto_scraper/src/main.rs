@@ -304,10 +304,11 @@ fn download_file_with_metadata(
     let dir = Path::new(output_dir);
     let mut existing_file_found = false;
     let mut existing_filename = String::new();
+    let mut found_in_metadata = false;
     
+    // First check metadata.csv for the ID
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.filter_map(Result::ok) {
-            // Check metadata.csv for the ID
             if entry.file_name() == "metadata.csv" {
                 if let Ok(content) = std::fs::read_to_string(entry.path()) {
                     for line in content.lines() {
@@ -316,6 +317,7 @@ fn download_file_with_metadata(
                             if let Some(filename) = line.split(',').next() {
                                 existing_file_found = true;
                                 existing_filename = filename.to_string();
+                                found_in_metadata = true;
                                 println!("Found ID {} in metadata: {}", id, filename);
                                 break;
                             }
@@ -329,7 +331,7 @@ fn download_file_with_metadata(
         }
     }
     
-    if existing_file_found {
+    if existing_file_found && found_in_metadata {
         println!("File with ID {} already downloaded as {}. Skipping.", id, existing_filename);
         return Ok(existing_filename);
     }
@@ -351,10 +353,31 @@ fn download_file_with_metadata(
     
     // Also check if the files already exist (in case metadata check missed them)
     if wav_path.exists() {
-        println!("File already exists: {}. Skipping download.", wav_path.display());
+        println!("File already exists: {}. Skipping download but adding to metadata.", wav_path.display());
+        
+        // If it wasn't found in metadata but exists on disk, add it to metadata
+        if !found_in_metadata {
+            // Add entry to metadata file
+            let metadata_path = Path::new(output_dir).join("metadata.csv");
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .append(true)
+                .open(metadata_path) {
+                let _ = writeln!(file, "{},{},{},{},{},{}", 
+                             wav_filename, 
+                             format_species_name(common_name), 
+                             url, 
+                             id, 
+                             common_name, 
+                             scientific_name);
+                
+                println!("Added existing file {} to metadata", wav_filename);
+            }
+        }
+        
         return Ok(wav_filename);
     }
     
+    // If we reach here, we need to download the file
     println!("Downloading: {} → {}", url, mp3_path.display());
 
     // Download the file
@@ -383,6 +406,7 @@ fn download_file_with_metadata(
 
     Ok(wav_filename) // Return the WAV filename for metadata
 }
+
 
 fn batch_convert_directory(dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let dir = Path::new(dir_path);
