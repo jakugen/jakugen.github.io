@@ -6,6 +6,8 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::{Duration, Instant};
 use threadpool::ThreadPool;
 use url::Url;
 
@@ -14,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage:");
-        eprintln!("  {} <start_url> [output_directory]", args[0]);
+        eprintln!("  {} <start_url> [output_directory] [--delay <ms>]", args[0]);
         eprintln!("  {} --convert <directory>", args[0]);
         std::process::exit(1);
     }
@@ -27,22 +29,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return batch_convert_directory(&args[2]);
     }
 
+    // Rate limiting settings
+    let mut page_delay_ms = 5000; // Default: 5 seconds between page requests
+    let mut download_delay_ms = 1000; // Default: 1 seconds between starting downloads
+    
+    // Check for custom delay parameter
+    if let Some(delay_index) = args.iter().position(|arg| arg == "--delay") {
+        if delay_index + 1 < args.len() {
+            if let Ok(delay) = args[delay_index + 1].parse::<u64>() {
+                page_delay_ms = delay;
+                download_delay_ms = delay / 4; // Download delay is 1/4 of page delay by default
+                println!("Using custom delay: {}ms between pages, {}ms between downloads", 
+                         page_delay_ms, download_delay_ms);
+            }
+        }
+    }
+
     let start_url = &args[1];
-    let output_dir = args.get(2).map(|s| s.as_str()).unwrap_or("downloads");
+    let output_dir = args.get(2)
+        .filter(|&arg| !arg.starts_with("--"))
+        .map(|s| s.as_str())
+        .unwrap_or("downloads");
 
     // Create output directory if it doesn't exist
     std::fs::create_dir_all(output_dir)?;
 
-    // Create HTTP client
-    let client = Client::new();
+    // Create HTTP client with rate limiting
+    let client = Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        .build()?;
+        
     let mut current_page_url = start_url.to_string();
     let mut page_num = 1;
 
     // Create a thread pool for downloads
-    let pool = ThreadPool::new(5); // 5 concurrent downloads
+    let pool = ThreadPool::new(3); // Reduced from 5 to 3 for less server load
     
     // Counter for each species (shared between threads)
     let species_counters = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
+    
+    // Rate limiter shared between threads
+    let last_request_time = Arc::new(Mutex::new(Instant::now()));
     
     // Create metadata file
     let metadata_path = Path::new(output_dir).join("metadata.csv");
@@ -51,6 +78,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         println!("Processing page {}: {}", page_num, current_page_url);
+
+        // Rate limiting: Wait before making the next page request
+        thread::sleep(Duration::from_millis(page_delay_ms));
 
         // Fetch page content
         let response = client.get(&current_page_url).send()?;
@@ -71,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let download_url = if href.starts_with("http") {
                     href.to_string()
                 } else {
-                    // FIX: Handle URL parsing error properly
+                    // Handle URL parsing error properly
                     let base = match Url::parse(&current_page_url) {
                         Ok(url) => url,
                         Err(e) => {
@@ -102,7 +132,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or("Unknown Bird");
                 
                 // Extract both common name and scientific name if available
-                // Example title: "Download file 'XC652207 - Arctic Tern - Sterna paradisaea.mp3'"
                 let mut common_name = "unknown";
                 let mut scientific_name = "unknown";
                 
@@ -132,39 +161,78 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        // Start jobs for each download
+        // Start jobs for each download with rate limiting
         for (url, id, common_name, scientific_name) in download_jobs {
             let client = client.clone();
             let output_dir = output_dir.to_string();
             let species_counters = Arc::clone(&species_counters);
-            let metadata_path = metadata_path.clone(); // Clone the path for use in thread
+            let metadata_path = metadata_path.clone();
+            let last_request_time = Arc::clone(&last_request_time);
+            let download_delay = Duration::from_millis(download_delay_ms);
+            
+            // Add delay between scheduling downloads
+            thread::sleep(Duration::from_millis(50));
             
             pool.execute(move || {
-                match download_file_with_metadata(
-                    &client, 
-                    &url, 
-                    &output_dir, 
-                    &id, 
-                    &common_name, 
-                    &scientific_name, 
-                    &species_counters
-                ) {
-                    Ok(filename) => {
-                        println!("Downloaded: {} -> {}", url, filename);
-                        // FIX: Append to one metadata file with proper locking
-                        if let Ok(mut file) = std::fs::OpenOptions::new()
-                            .append(true)
-                            .open(&metadata_path) {
-                            let _ = writeln!(file, "{},{},{},{},{},{}", 
-                                         filename, 
-                                         format_species_name(&common_name), 
-                                         url, 
-                                         id, 
-                                         common_name, 
-                                         scientific_name);
+                // Rate limiting within thread
+                {
+                    let mut last_time = last_request_time.lock().unwrap();
+                    let now = Instant::now();
+                    let time_since_last = now.duration_since(*last_time);
+                    
+                    if time_since_last < download_delay {
+                        // Sleep for the remaining time
+                        let sleep_time = download_delay - time_since_last;
+                        thread::sleep(sleep_time);
+                    }
+                    
+                    // Update the last request time
+                    *last_time = Instant::now();
+                }
+                
+                // Implement retries with exponential backoff
+                let max_retries = 3;
+                let mut retry_count = 0;
+                let mut retry_delay = Duration::from_millis(1000);
+                
+                while retry_count <= max_retries {
+                    match download_file_with_metadata(
+                        &client, 
+                        &url, 
+                        &output_dir, 
+                        &id, 
+                        &common_name, 
+                        &scientific_name, 
+                        &species_counters
+                    ) {
+                        Ok(filename) => {
+                            println!("Downloaded: {} -> {}", url, filename);
+                            // Append to metadata file with proper locking
+                            if let Ok(mut file) = std::fs::OpenOptions::new()
+                                .append(true)
+                                .open(&metadata_path) {
+                                let _ = writeln!(file, "{},{},{},{},{},{}", 
+                                             filename, 
+                                             format_species_name(&common_name), 
+                                             url, 
+                                             id, 
+                                             common_name, 
+                                             scientific_name);
+                            }
+                            break; // Success, exit retry loop
+                        },
+                        Err(e) => {
+                            retry_count += 1;
+                            if retry_count <= max_retries {
+                                println!("Download attempt {} failed for {}: {}. Retrying in {:?}...", 
+                                         retry_count, url, e, retry_delay);
+                                thread::sleep(retry_delay);
+                                retry_delay *= 2; // Exponential backoff
+                            } else {
+                                println!("Failed to download {} after {} attempts: {}", url, max_retries + 1, e);
+                            }
                         }
-                    },
-                    Err(e) => println!("Failed to download {}: {}", url, e),
+                    }
                 }
             });
         }
@@ -231,6 +299,41 @@ fn download_file_with_metadata(
     // Format the species name for the filename
     let species_name = format_species_name(common_name);
     
+    // Check if file with this ID already exists in the directory
+    let id_pattern = format!("XC{}", id);
+    let dir = Path::new(output_dir);
+    let mut existing_file_found = false;
+    let mut existing_filename = String::new();
+    
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.filter_map(Result::ok) {
+            // Check metadata.csv for the ID
+            if entry.file_name() == "metadata.csv" {
+                if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                    for line in content.lines() {
+                        if line.contains(&id_pattern) {
+                            // Extract filename from CSV line
+                            if let Some(filename) = line.split(',').next() {
+                                existing_file_found = true;
+                                existing_filename = filename.to_string();
+                                println!("Found ID {} in metadata: {}", id, filename);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if existing_file_found {
+                    break;
+                }
+            }
+        }
+    }
+    
+    if existing_file_found {
+        println!("File with ID {} already downloaded as {}. Skipping.", id, existing_filename);
+        return Ok(existing_filename);
+    }
+    
     // Get the next number for this species
     let file_number = {
         let mut counters = species_counters.lock().unwrap();
@@ -245,6 +348,12 @@ fn download_file_with_metadata(
     
     let mp3_path = Path::new(output_dir).join(&mp3_filename);
     let wav_path = Path::new(output_dir).join(&wav_filename);
+    
+    // Also check if the files already exist (in case metadata check missed them)
+    if wav_path.exists() {
+        println!("File already exists: {}. Skipping download.", wav_path.display());
+        return Ok(wav_filename);
+    }
     
     println!("Downloading: {} → {}", url, mp3_path.display());
 
