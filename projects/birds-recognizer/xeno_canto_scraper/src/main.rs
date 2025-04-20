@@ -1,15 +1,28 @@
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use threadpool::ThreadPool;
 use url::Url;
+use csv::{Reader, Writer};
+
+// Struct to hold metadata for a recording
+#[derive(Debug, Clone)]
+struct RecordingMetadata {
+    id: String,
+    url: String,
+    common_name: String,
+    scientific_name: String,
+    filename: String,
+    species: String, // Normalized species name
+    is_downloaded: bool,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse command line arguments
@@ -17,10 +30,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() < 2 {
         eprintln!("Usage:");
         eprintln!("  {} <start_url> [output_directory] [--delay <ms>]", args[0]);
+        eprintln!("  {} --download-only [output_directory] [--delay <ms>]", args[0]);
         eprintln!("  {} --convert <directory>", args[0]);
         std::process::exit(1);
     }
 
+    // Handle conversion command
     if args[1] == "--convert" {
         if args.len() < 3 {
             eprintln!("Please specify a directory to convert");
@@ -30,52 +45,102 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Rate limiting settings
-    let mut page_delay_ms = 5000; // Default: 5 seconds between page requests
-    let mut download_delay_ms = 1000; // Default: 1 seconds between starting downloads
+    let mut page_delay_ms = 2000; // Default: 2 seconds between page requests
+    let mut download_delay_ms = 500; // Default: 0.5 seconds between downloads
     
     // Check for custom delay parameter
     if let Some(delay_index) = args.iter().position(|arg| arg == "--delay") {
         if delay_index + 1 < args.len() {
             if let Ok(delay) = args[delay_index + 1].parse::<u64>() {
                 page_delay_ms = delay;
-                download_delay_ms = delay / 4; // Download delay is 1/4 of page delay by default
+                download_delay_ms = delay / 4;
                 println!("Using custom delay: {}ms between pages, {}ms between downloads", 
                          page_delay_ms, download_delay_ms);
             }
         }
     }
 
-    let start_url = &args[1];
-    let output_dir = args.get(2)
-        .filter(|&arg| !arg.starts_with("--"))
-        .map(|s| s.as_str())
-        .unwrap_or("downloads");
+    // Check if we're in download-only mode
+    let download_only = args[1] == "--download-only";
+    
+    // Determine output directory based on mode
+    let output_dir = if download_only {
+        args.get(2)
+            .filter(|&arg| !arg.starts_with("--"))
+            .map(|s| s.as_str())
+            .unwrap_or("downloads")
+    } else {
+        // Normal mode - first arg is URL
+        args.get(2)
+            .filter(|&arg| !arg.starts_with("--"))
+            .map(|s| s.as_str())
+            .unwrap_or("downloads")
+    };
 
     // Create output directory if it doesn't exist
     std::fs::create_dir_all(output_dir)?;
-
-    // Create HTTP client with rate limiting
+    
+    // Create HTTP client
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         .build()?;
+    
+    let metadata_path = Path::new(output_dir).join("metadata.csv");
+    
+    if download_only {
+        // Skip extraction and just load existing metadata
+        if !metadata_path.exists() {
+            eprintln!("Error: No metadata.csv found in {}. Cannot use --download-only mode.", output_dir);
+            std::process::exit(1);
+        }
         
+        println!("Download-only mode: Using existing metadata from {}", metadata_path.display());
+        println!("1. Reading metadata CSV...");
+        let metadata = load_existing_metadata(&metadata_path)?;
+        
+        println!("2. Checking for already downloaded files...");
+        let updated_metadata = update_download_status(&metadata, output_dir)?;
+        
+        println!("3. Saving updated metadata...");
+        write_metadata_csv(&metadata_path, &updated_metadata)?;
+        
+        println!("4. Downloading missing files...");
+        download_missing_files(&client, &updated_metadata, output_dir, download_delay_ms)?;
+    } else {
+        // Normal mode - extract links first
+        let start_url = &args[1];
+        
+        println!("1. Extracting all download links...");
+        let download_info = extract_all_download_links(client.clone(), start_url, page_delay_ms)?;
+        println!("Found {} total download links", download_info.len());
+        
+        println!("2. Creating/updating metadata CSV...");
+        let metadata = load_or_create_metadata(&metadata_path, &download_info)?;
+        
+        println!("3. Checking for already downloaded files...");
+        let updated_metadata = update_download_status(&metadata, output_dir)?;
+        
+        println!("4. Saving updated metadata...");
+        write_metadata_csv(&metadata_path, &updated_metadata)?;
+        
+        println!("5. Downloading missing files...");
+        download_missing_files(&client, &updated_metadata, output_dir, download_delay_ms)?;
+    }
+    
+    println!("Scraping completed!");
+    Ok(())
+}
+
+// Extract all download links by crawling pages
+fn extract_all_download_links(
+    client: Client, 
+    start_url: &str, 
+    page_delay_ms: u64
+) -> Result<Vec<(String, String, String, String)>, Box<dyn std::error::Error>> {
     let mut current_page_url = start_url.to_string();
     let mut page_num = 1;
-
-    // Create a thread pool for downloads
-    let pool = ThreadPool::new(3); // Reduced from 5 to 3 for less server load
+    let mut download_info = Vec::new();
     
-    // Counter for each species (shared between threads)
-    let species_counters = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
-    
-    // Rate limiter shared between threads
-    let last_request_time = Arc::new(Mutex::new(Instant::now()));
-    
-    // Create metadata file
-    let metadata_path = Path::new(output_dir).join("metadata.csv");
-    let mut metadata_file = File::create(&metadata_path)?;
-    writeln!(metadata_file, "filename,species,original_url,id,common_name,scientific_name")?;
-
     loop {
         println!("Processing page {}: {}", page_num, current_page_url);
 
@@ -94,7 +159,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Extract download links along with metadata
         let selector = Selector::parse("a[href$='/download']").unwrap();
-        let mut download_jobs = Vec::new();
+        let mut page_downloads = Vec::new();
 
         for element in document.select(&selector) {
             if let Some(href) = element.value().attr("href") {
@@ -151,90 +216,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 
-                download_jobs.push((download_url, id, common_name.to_string(), scientific_name.to_string()));
+                page_downloads.push((download_url, id, common_name.to_string(), scientific_name.to_string()));
             }
         }
-
-        println!("Found {} download links", download_jobs.len());
-        if download_jobs.is_empty() {
-            println!("No more download links found, exiting.");
+        
+        let page_downloads_count = page_downloads.len();
+        download_info.extend(page_downloads);
+        println!("Found {} download links on page {}", page_downloads_count, page_num);
+        
+        
+        if page_downloads_count == 0 {
+            println!("No more download links found on page {}, exiting.", page_num);
             break;
-        }
-
-        // Start jobs for each download with rate limiting
-        for (url, id, common_name, scientific_name) in download_jobs {
-            let client = client.clone();
-            let output_dir = output_dir.to_string();
-            let species_counters = Arc::clone(&species_counters);
-            let metadata_path = metadata_path.clone();
-            let last_request_time = Arc::clone(&last_request_time);
-            let download_delay = Duration::from_millis(download_delay_ms);
-            
-            // Add delay between scheduling downloads
-            thread::sleep(Duration::from_millis(50));
-            
-            pool.execute(move || {
-                // Rate limiting within thread
-                {
-                    let mut last_time = last_request_time.lock().unwrap();
-                    let now = Instant::now();
-                    let time_since_last = now.duration_since(*last_time);
-                    
-                    if time_since_last < download_delay {
-                        // Sleep for the remaining time
-                        let sleep_time = download_delay - time_since_last;
-                        thread::sleep(sleep_time);
-                    }
-                    
-                    // Update the last request time
-                    *last_time = Instant::now();
-                }
-                
-                // Implement retries with exponential backoff
-                let max_retries = 3;
-                let mut retry_count = 0;
-                let mut retry_delay = Duration::from_millis(1000);
-                
-                while retry_count <= max_retries {
-                    match download_file_with_metadata(
-                        &client, 
-                        &url, 
-                        &output_dir, 
-                        &id, 
-                        &common_name, 
-                        &scientific_name, 
-                        &species_counters
-                    ) {
-                        Ok(filename) => {
-                            println!("Downloaded: {} -> {}", url, filename);
-                            // Append to metadata file with proper locking
-                            if let Ok(mut file) = std::fs::OpenOptions::new()
-                                .append(true)
-                                .open(&metadata_path) {
-                                let _ = writeln!(file, "{},{},{},{},{},{}", 
-                                             filename, 
-                                             format_species_name(&common_name), 
-                                             url, 
-                                             id, 
-                                             common_name, 
-                                             scientific_name);
-                            }
-                            break; // Success, exit retry loop
-                        },
-                        Err(e) => {
-                            retry_count += 1;
-                            if retry_count <= max_retries {
-                                println!("Download attempt {} failed for {}: {}. Retrying in {:?}...", 
-                                         retry_count, url, e, retry_delay);
-                                thread::sleep(retry_delay);
-                                retry_delay *= 2; // Exponential backoff
-                            } else {
-                                println!("Failed to download {} after {} attempts: {}", url, max_retries + 1, e);
-                            }
-                        }
-                    }
-                }
-            });
         }
 
         // Find next page link
@@ -274,171 +267,382 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
     }
-
-    // Wait for remaining jobs to complete
-    pool.join();
     
-    println!("Scraping completed!");
-    Ok(())
+    Ok(download_info)
 }
 
-fn format_species_name(name: &str) -> String {
-    // Convert "Arctic Tern" to "arctic_tern"
-    name.to_lowercase().replace(' ', "_")
-}
-
-fn download_file_with_metadata(
-    client: &Client, 
-    url: &str, 
-    output_dir: &str, 
-    id: &str, 
-    common_name: &str, 
-    scientific_name: &str,
-    species_counters: &Arc<Mutex<HashMap<String, usize>>>
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    // Format the species name for the filename
-    let species_name = format_species_name(common_name);
+// Load existing metadata or create new metadata with newly found links
+fn load_or_create_metadata(
+    metadata_path: &Path,
+    download_info: &[(String, String, String, String)]
+) -> Result<Vec<RecordingMetadata>, Box<dyn std::error::Error>> {
+    let mut metadata = Vec::new();
+    let mut existing_ids = HashSet::new();
     
-    // Check if file with this ID already exists in the directory
-    let id_pattern = format!("XC{}", id);
-    let dir = Path::new(output_dir);
-    let mut existing_file_found = false;
-    let mut existing_filename = String::new();
-    let mut found_in_metadata = false;
+    // Read existing metadata if file exists
+    if metadata_path.exists() {
+        let mut reader = csv::Reader::from_path(metadata_path)?;
+        
+        for result in reader.records() {
+            let record = result?;
+            if record.len() >= 6 { // Basic validation
+                let filename = record[0].to_string();
+                let species = record[1].to_string();
+                let url = record[2].to_string();
+                let id = record[3].to_string();
+                let common_name = record[4].to_string();
+                let scientific_name = record[5].to_string();
+                // Parse is_downloaded flag if it exists
+                let is_downloaded = if record.len() >= 7 {
+                    record[6].parse::<bool>().unwrap_or(false)
+                } else {
+                    false
+                };
+                
+                existing_ids.insert(id.clone());
+                
+                metadata.push(RecordingMetadata {
+                    id,
+                    url,
+                    common_name,
+                    scientific_name,
+                    filename,
+                    species,
+                    is_downloaded,
+                });
+            }
+        }
+    }
     
-    // First check metadata.csv for the ID
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.filter_map(Result::ok) {
-            if entry.file_name() == "metadata.csv" {
-                if let Ok(content) = std::fs::read_to_string(entry.path()) {
-                    for line in content.lines() {
-                        if line.contains(&id_pattern) {
-                            // Extract filename from CSV line
-                            if let Some(filename) = line.split(',').next() {
-                                existing_file_found = true;
-                                existing_filename = filename.to_string();
-                                found_in_metadata = true;
-                                println!("Found ID {} in metadata: {}", id, filename);
-                                break;
-                            }
-                        }
+    // Get max number used for each species to avoid duplicates
+    let mut species_counters = HashMap::new();
+    for meta in &metadata {
+        let species = &meta.species;
+        if let Some(number_str) = meta.filename.strip_prefix(&format!("{}_", species)) {
+            if let Some(number_str) = number_str.strip_suffix(".wav") {
+                if let Ok(number) = number_str.parse::<usize>() {
+                    let current_max = species_counters.entry(species.clone()).or_insert(0);
+                    if number > *current_max {
+                        *current_max = number;
                     }
                 }
-                if existing_file_found {
-                    break;
-                }
             }
         }
     }
     
-    if existing_file_found && found_in_metadata {
-        println!("File with ID {} already downloaded as {}. Skipping.", id, existing_filename);
-        return Ok(existing_filename);
-    }
-    
-    // Get the next number for this species
-    let file_number = {
-        let mut counters = species_counters.lock().unwrap();
-        let count = counters.entry(species_name.clone()).or_insert(0);
-        *count += 1;
-        *count
-    };
-    
-    // Create the formatted filenames (both MP3 and WAV)
-    let mp3_filename = format!("{}_{}.mp3", species_name, file_number);
-    let wav_filename = format!("{}_{}.wav", species_name, file_number);
-    
-    let mp3_path = Path::new(output_dir).join(&mp3_filename);
-    let wav_path = Path::new(output_dir).join(&wav_filename);
-    
-    // Also check if the files already exist (in case metadata check missed them)
-    if wav_path.exists() {
-        println!("File already exists: {}. Skipping download but adding to metadata.", wav_path.display());
-        
-        // If it wasn't found in metadata but exists on disk, add it to metadata
-        if !found_in_metadata {
-            // Add entry to metadata file
-            let metadata_path = Path::new(output_dir).join("metadata.csv");
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .append(true)
-                .open(metadata_path) {
-                let _ = writeln!(file, "{},{},{},{},{},{}", 
-                             wav_filename, 
-                             format_species_name(common_name), 
-                             url, 
-                             id, 
-                             common_name, 
-                             scientific_name);
-                
-                println!("Added existing file {} to metadata", wav_filename);
-            }
+    // Add new download links to metadata
+    for (url, id, common_name, scientific_name) in download_info {
+        // Skip if already exists in metadata
+        if existing_ids.contains(id) {
+            continue;
         }
         
-        return Ok(wav_filename);
+        // Format the species name
+        let species = format_species_name(common_name);
+        
+        // Generate filename with next available number
+        let counter = species_counters.entry(species.clone()).or_insert(0);
+        *counter += 1;
+        let next_number = *counter;
+        
+        let filename = format!("{}_{}.wav", species, next_number);
+        
+        // Add to metadata
+        metadata.push(RecordingMetadata {
+            id: id.clone(),
+            url: url.clone(),
+            common_name: common_name.clone(),
+            scientific_name: scientific_name.clone(),
+            filename,
+            species,
+            is_downloaded: false,
+        });
     }
     
-    // If we reach here, we need to download the file
-    println!("Downloading: {} → {}", url, mp3_path.display());
-
-    // Download the file
-    let response = client.get(url).send()?;
-    if !response.status().is_success() {
-        return Err(format!("Download failed with status: {}", response.status()).into());
-    }
-    
-    let bytes = response.bytes()?;
-    
-    // Save to MP3 file
-    let mut file = File::create(&mp3_path)?;
-    file.write_all(&bytes)?;
-    
-    // Convert to WAV
-    match convert_using_ffmpeg(&mp3_path, &wav_path) {
-        Ok(_) => {
-            // Optionally remove the MP3 file if you don't need it
-            // std::fs::remove_file(&mp3_path)?;
-        },
-        Err(e) => {
-            println!("Error converting to WAV: {}", e);
-            // Continue without conversion
-        }
-    }
-
-    Ok(wav_filename) // Return the WAV filename for metadata
+    Ok(metadata)
 }
 
-
-fn batch_convert_directory(dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let dir = Path::new(dir_path);
-    if !dir.is_dir() {
-        return Err(format!("{} is not a directory", dir_path).into());
-    }
+// Check which files already exist in the directory
+fn update_download_status(
+    metadata: &[RecordingMetadata],
+    output_dir: &str
+) -> Result<Vec<RecordingMetadata>, Box<dyn std::error::Error>> {
+    let mut updated_metadata = metadata.to_vec();
+    let dir = Path::new(output_dir);
     
+    // Create a HashSet of existing filenames for quick lookup
+    let existing_filenames: HashSet<String> = updated_metadata.iter()
+        .map(|m| m.filename.clone())
+        .collect();
+    
+    // Also track IDs to prevent duplicates
+    let existing_ids: HashSet<String> = updated_metadata.iter()
+        .map(|m| m.id.clone())
+        .collect();
+    
+    // Check for existing files
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
         
-        if path.extension().map_or(false, |ext| ext == "mp3") {
-            let stem = path.file_stem().unwrap().to_string_lossy();
-            let wav_path = path.with_extension("wav");
-            
-            println!("Converting: {}", path.display());
-            match convert_using_ffmpeg(&path, &wav_path) {
-                Ok(_) => println!("Conversion successful: {}", wav_path.display()),
-                Err(e) => println!("Error converting {}: {}", path.display(), e),
+        if let Some(ext) = path.extension() {
+            if ext == "wav" {
+                if let Some(filename) = path.file_name() {
+                    let filename_str = filename.to_string_lossy().to_string();
+                    
+                    // Check if this file is already in our metadata
+                    if existing_filenames.contains(&filename_str) {
+                        // File exists in metadata, mark as downloaded
+                        for meta in &mut updated_metadata {
+                            if meta.filename == filename_str {
+                                meta.is_downloaded = true;
+                                println!("Found existing file: {}", filename_str);
+                                break;
+                            }
+                        }
+                    } else {
+                        // File exists on disk but not in metadata - add it
+                        println!("Found file not in metadata: {} - adding to metadata", filename_str);
+                        
+                        // Try to extract species from filename (format should be species_number.wav)
+                        let species = if let Some(underscore_pos) = filename_str.rfind('_') {
+                            filename_str[0..underscore_pos].to_string()
+                        } else {
+                            // Can't parse, use filename without extension as species
+                            if let Some(dot_pos) = filename_str.rfind('.') {
+                                filename_str[0..dot_pos].to_string()
+                            } else {
+                                filename_str.clone()
+                            }
+                        };
+                        
+                        // Generate placeholder data for the new entry
+                        let common_name = species.replace('_', " ");
+                        
+                        // Create unique ID that won't conflict with existing IDs
+                        let mut unique_id = format!("local_{}", filename_str.replace('.', "_"));
+                        let mut counter = 1;
+                        while existing_ids.contains(&unique_id) {
+                            unique_id = format!("local_{}_{}", filename_str.replace('.', "_"), counter);
+                            counter += 1;
+                        }
+                        
+                        // Create a new metadata entry for this file
+                        updated_metadata.push(RecordingMetadata {
+                            id: unique_id,
+                            url: "file://local".to_string(), // Placeholder URL
+                            common_name: common_name.clone(),
+                            scientific_name: "Unknown".to_string(),
+                            filename: filename_str,
+                            species,
+                            is_downloaded: true, // Mark as downloaded since it exists
+                        });
+                    }
+                }
             }
         }
+    }
+    
+    // Count how many are already downloaded
+    let downloaded_count = updated_metadata.iter().filter(|m| m.is_downloaded).count();
+    let added_count = updated_metadata.len() - metadata.len();
+    
+    println!("Found {} files already downloaded out of {} total", 
+             downloaded_count, updated_metadata.len());
+    
+    if added_count > 0 {
+        println!("Added {} new files found on disk to metadata", added_count);
+    }
+    
+    Ok(updated_metadata)
+}
+
+// Save metadata to CSV
+fn write_metadata_csv(
+    metadata_path: &Path,
+    metadata: &[RecordingMetadata]
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut writer = csv::Writer::from_path(metadata_path)?;
+    
+    // Write header
+    writer.write_record(&[
+        "filename", "species", "original_url", "id", "common_name", "scientific_name", "is_downloaded"
+    ])?;
+    
+    // Write data
+    for meta in metadata {
+        writer.write_record(&[
+            &meta.filename,
+            &meta.species,
+            &meta.url,
+            &meta.id,
+            &meta.common_name,
+            &meta.scientific_name,
+            &meta.is_downloaded.to_string(),
+        ])?;
+    }
+    
+    writer.flush()?;
+    println!("Metadata saved to {}", metadata_path.display());
+    Ok(())
+}
+
+// Download missing files
+fn download_missing_files(
+    client: &Client,
+    metadata: &[RecordingMetadata],
+    output_dir: &str,
+    download_delay_ms: u64
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Count how many files need to be downloaded
+    let to_download = metadata.iter().filter(|m| !m.is_downloaded).count();
+    println!("Need to download {} files", to_download);
+    
+    if to_download == 0 {
+        println!("No new files to download!");
+        return Ok(());
+    }
+    
+    // Create thread pool for downloads
+    let pool = ThreadPool::new(3);
+    let last_request_time = Arc::new(Mutex::new(Instant::now()));
+    let metadata_path = Path::new(output_dir).join("metadata.csv");
+    
+    // Mutex to track successfully downloaded files for updating metadata
+    let downloaded_ids = Arc::new(Mutex::new(Vec::new()));
+    
+    // Start downloads for non-downloaded files
+    for meta in metadata.iter().filter(|m| !m.is_downloaded) {
+        let client = client.clone();
+        let url = meta.url.clone();
+        let id = meta.id.clone();
+        let filename = meta.filename.clone();
+        let output_dir = output_dir.to_string();
+        let download_delay = Duration::from_millis(download_delay_ms);
+        let last_request_time = Arc::clone(&last_request_time);
+        let downloaded_ids = Arc::clone(&downloaded_ids);
+        
+        pool.execute(move || {
+            // Rate limiting within thread
+            {
+                let mut last_time = last_request_time.lock().unwrap();
+                let now = Instant::now();
+                let time_since_last = now.duration_since(*last_time);
+                
+                if time_since_last < download_delay {
+                    // Sleep for the remaining time
+                    let sleep_time = download_delay - time_since_last;
+                    thread::sleep(sleep_time);
+                }
+                
+                // Update the last request time
+                *last_time = Instant::now();
+            }
+            
+            // Download file
+            let mp3_path = Path::new(&output_dir).join(filename.replace(".wav", ".mp3"));
+            let wav_path = Path::new(&output_dir).join(&filename);
+            
+            println!("Downloading: {} -> {}", url, mp3_path.display());
+            
+            // Download with retries
+            let max_retries = 3;
+            let mut retry_count = 0;
+            let mut retry_delay = Duration::from_millis(1000);
+            
+            while retry_count <= max_retries {
+                match client.get(&url).send() {
+                    Ok(response) => {
+                        if !response.status().is_success() {
+                            println!("Download failed with status: {}", response.status());
+                        } else {
+                            match response.bytes() {
+                                Ok(bytes) => {
+                                    // Save to MP3 file
+                                    match File::create(&mp3_path) {
+                                        Ok(mut file) => {
+                                            if let Err(e) = file.write_all(&bytes) {
+                                                println!("Error writing file: {}", e);
+                                            } else {
+                                                // Convert to WAV
+                                                match convert_using_ffmpeg(&mp3_path, &wav_path) {
+                                                    Ok(_) => {
+                                                        println!("Successfully downloaded and converted: {}", filename);
+                                                        
+                                                        // Add to successful downloads
+                                                        let mut ids = downloaded_ids.lock().unwrap();
+                                                        ids.push(id.clone());
+                                                        
+                                                        break;
+                                                    },
+                                                    Err(e) => {
+                                                        println!("Error converting to WAV: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        Err(e) => {
+                                            println!("Error creating file: {}", e);
+                                        }
+                                    }
+                                },
+                                Err(e) => {
+                                    println!("Error downloading bytes: {}", e);
+                                }
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        println!("Download error: {}", e);
+                    }
+                }
+                
+                retry_count += 1;
+                if retry_count <= max_retries {
+                    println!("Retrying in {:?}...", retry_delay);
+                    thread::sleep(retry_delay);
+                    retry_delay *= 2; // Exponential backoff
+                } else {
+                    println!("Failed to download {} after {} attempts", url, max_retries + 1);
+                }
+            }
+        });
+    }
+    
+    // Wait for all downloads to complete
+    pool.join();
+    
+    // Update metadata with successful downloads
+    let successful_ids = downloaded_ids.lock().unwrap();
+    if !successful_ids.is_empty() {
+        let mut updated_metadata = metadata.to_vec();
+        for id in successful_ids.iter() {
+            for meta in &mut updated_metadata {
+                if &meta.id == id {
+                    meta.is_downloaded = true;
+                    break;
+                }
+            }
+        }
+        
+        // Save updated metadata
+        write_metadata_csv(&metadata_path, &updated_metadata)?;
+        println!("Updated metadata with {} newly downloaded files", successful_ids.len());
     }
     
     Ok(())
 }
 
+// Convert common name to normalized species name
+fn format_species_name(name: &str) -> String {
+    name.to_lowercase().replace(' ', "_")
+}
 
-fn convert_using_ffmpeg(mp3_path: &Path, wav_path: &Path) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-    // Check if ffmpeg is available
+// Convert MP3 to WAV using ffmpeg
+fn convert_using_ffmpeg(mp3_path: &Path, wav_path: &Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use std::process::Command;
     
-    println!("Attempting conversion with ffmpeg: {} → {}", mp3_path.display(), wav_path.display());
+    println!("Converting with ffmpeg: {} → {}", mp3_path.display(), wav_path.display());
     
     let output = Command::new("C:\\tools\\ffmpeg.exe")
         .arg("-y") // Overwrite existing files
@@ -453,10 +657,82 @@ fn convert_using_ffmpeg(mp3_path: &Path, wav_path: &Path) -> Result<bool, Box<dy
     
     if output.status.success() {
         println!("ffmpeg conversion successful");
-        Ok(true)
+        Ok(())
     } else {
         let error = String::from_utf8_lossy(&output.stderr);
-        println!("ffmpeg conversion failed: {}", error);
-        Ok(false) // Return false but not an error so we can try fallback
+        Err(format!("ffmpeg conversion failed: {}", error).into())
     }
+}
+
+// Batch convert directory function
+fn batch_convert_directory(dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let dir = Path::new(dir_path);
+    if !dir.is_dir() {
+        return Err(format!("{} is not a directory", dir_path).into());
+    }
+    
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        if path.extension().map_or(false, |ext| ext == "mp3") {
+            let wav_path = path.with_extension("wav");
+            
+            if !wav_path.exists() {
+                println!("Converting: {}", path.display());
+                match convert_using_ffmpeg(&path, &wav_path) {
+                    Ok(_) => println!("Conversion successful: {}", wav_path.display()),
+                    Err(e) => println!("Error converting {}: {}", path.display(), e),
+                }
+            } else {
+                println!("Skipping: {} (WAV already exists)", path.display());
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+// Add this new function to load just the existing metadata without adding new entries
+fn load_existing_metadata(
+    metadata_path: &Path
+) -> Result<Vec<RecordingMetadata>, Box<dyn std::error::Error>> {
+    let mut metadata = Vec::new();
+    
+    if metadata_path.exists() {
+        let mut reader = csv::Reader::from_path(metadata_path)?;
+        
+        for result in reader.records() {
+            let record = result?;
+            if record.len() >= 6 { // Basic validation
+                let filename = record[0].to_string();
+                let species = record[1].to_string();
+                let url = record[2].to_string();
+                let id = record[3].to_string();
+                let common_name = record[4].to_string();
+                let scientific_name = record[5].to_string();
+                // Parse is_downloaded flag if it exists
+                let is_downloaded = if record.len() >= 7 {
+                    record[6].parse::<bool>().unwrap_or(false)
+                } else {
+                    false
+                };
+                
+                metadata.push(RecordingMetadata {
+                    id,
+                    url,
+                    common_name,
+                    scientific_name,
+                    filename,
+                    species,
+                    is_downloaded,
+                });
+            }
+        }
+    } else {
+        return Err("Metadata file not found".into());
+    }
+    
+    println!("Loaded {} entries from existing metadata", metadata.len());
+    Ok(metadata)
 }
