@@ -1,0 +1,13 @@
+[package]
+name = "xeno_canto_scraper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { version = "0.11", features = ["blocking"] }
+scraper = "0.16"
+threadpool = "1.8"
+url = "2.4"
+minimp3 = "0.5"
+hound = "3.5"
+csv = "1.2"
