@@ -1,4 +1,4 @@
-import { simpleExtractMfccFeatures } from './mfcc.js';
+import { simpleExtractMfccFeatures, extractEnhancedMfccFeatures } from './mfcc.js';
 
 /**
  * Loads WAV files from a FileList, extracts MFCC features for each file,
@@ -33,13 +33,14 @@ async function loadFilesAndExtractFeatures(fileList) {
     }
 
     try {
-      // simpleExtractMfccFeatures returns a 13-element vector.
-      const mfcc = await simpleExtractMfccFeatures(file);
-      if (mfcc && mfcc.length === 13) { // Basic validation
+      // Use enhanced MFCC features (60-dimensional: 20 static + 20 delta + 20 delta-delta)
+      const mfcc = await extractEnhancedMfccFeatures(file);
+      if (mfcc && mfcc.length === 60) { // Validate 60-dimensional feature vector
           features.push(mfcc);
           labelIndices.push(labelIndex);
+          console.log(`Processed ${file.name}: extracted ${mfcc.length}D features`);
       } else {
-          console.warn(`Skipping file ${file.name} due to invalid MFCC output.`);
+          console.warn(`Skipping file ${file.name} due to invalid MFCC output. Expected 60D, got ${mfcc ? mfcc.length : 'null'}`);
       }
     } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
@@ -98,7 +99,7 @@ export async function prepareDataset() {
   }
 
   // Convert features array to a 2D tensor
-  const xs = tf.tensor2d(features); // shape: [numSamples, 13]
+  const xs = tf.tensor2d(features); // shape: [numSamples, 60] - enhanced MFCC features
 
   // Convert numerical label indices to a 1D tensor
   const labelIndicesTensor = tf.tensor1d(labelIndices, 'int32');
@@ -130,8 +131,8 @@ export async function trainModel() {
     // Build a more reliable model with additional regularization.
     const model = tf.sequential();
 
-    // Input layer with BatchNormalization.
-    model.add(tf.layers.batchNormalization({inputShape: [13]}));
+    // Input layer with BatchNormalization for 60-dimensional enhanced MFCC features
+    model.add(tf.layers.batchNormalization({inputShape: [60]}));
 
     // First dense layer.
     model.add(tf.layers.dense({

@@ -56,10 +56,13 @@ document.getElementById('stopRecording').addEventListener('click', () => {
 });
 
 /**
- * Prediction: Extract features from the recording and load a saved model for prediction.
+ * Prediction: Extract enhanced features from the recording and load a saved model for prediction.
  */
 async function predict(audioBlob, model) {
-  const mfccFeatures = await featureExtraction.simpleExtractMfccFeatures(audioBlob);
+  // Use enhanced MFCC features (60-dimensional)
+  const mfccFeatures = await featureExtraction.extractEnhancedMfccFeatures(audioBlob);
+  console.log(`Extracted ${mfccFeatures.length}D enhanced features for prediction`);
+  
   const inputTensor = tf.tensor2d([mfccFeatures], [1, mfccFeatures.length]);
   const prediction = model.predict(inputTensor);
   const predictionArray = await prediction.array();
@@ -67,6 +70,13 @@ async function predict(audioBlob, model) {
   const probabilities = predictionArray[0];
   const maxValue = Math.max(...probabilities);
   const maxIndex = probabilities.indexOf(maxValue);
+  
+  // Log prediction confidence for debugging
+  console.log(`Prediction confidence: ${(maxValue * 100).toFixed(2)}%`);
+  console.log(`Top 3 predictions:`, probabilities
+    .map((prob, idx) => ({ class: idx, confidence: prob }))
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 3));
   
 //   console.log('Prediction:', predictionArray);
   return maxIndex;

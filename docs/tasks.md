@@ -8,7 +8,10 @@
   - _Requirements: 2.2, 4.2_
 
 - [ ] 2. Implement multi-feature extraction system
-  - [ ] 2.1 Enhance MFCC extraction with delta features
+  - [x] 2.1 Enhance MFCC extraction with delta features
+
+
+
     - Extend current MFCC implementation to extract 20 coefficients instead of 13
     - Add delta and delta-delta MFCC computation functions
     - Implement cepstral mean normalization
