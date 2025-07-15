@@ -56,30 +56,62 @@ document.getElementById('stopRecording').addEventListener('click', () => {
 });
 
 /**
- * Prediction: Extract enhanced features from the recording and load a saved model for prediction.
+ * Prediction: Extract features from the recording and load a saved model for prediction.
+ * Automatically detects model input requirements and uses appropriate feature extraction.
  */
 async function predict(audioBlob, model) {
-  // Use enhanced MFCC features (60-dimensional)
-  const mfccFeatures = await featureExtraction.extractEnhancedMfccFeatures(audioBlob);
-  console.log(`Extracted ${mfccFeatures.length}D enhanced features for prediction`);
-  
-  const inputTensor = tf.tensor2d([mfccFeatures], [1, mfccFeatures.length]);
-  const prediction = model.predict(inputTensor);
-  const predictionArray = await prediction.array();
+  try {
+    // Detect model input shape to determine which features to use
+    const inputShape = model.inputs[0].shape;
+    const expectedFeatureDim = inputShape[1]; // [batch_size, feature_dim]
+    
+    console.log(`Model expects ${expectedFeatureDim}D features`);
+    
+    let mfccFeatures;
+    if (expectedFeatureDim === 60) {
+      // Use enhanced MFCC features for new models
+      console.log('Using enhanced MFCC features (60D)');
+      mfccFeatures = await featureExtraction.extractEnhancedMfccFeatures(audioBlob);
+    } else if (expectedFeatureDim === 13) {
+      // Use simple MFCC features for legacy models
+      console.log('Using simple MFCC features (13D) for legacy model');
+      mfccFeatures = await featureExtraction.simpleExtractMfccFeatures(audioBlob);
+    } else {
+      throw new Error(`Unsupported model input dimension: ${expectedFeatureDim}D. Expected 13D or 60D.`);
+    }
+    
+    console.log(`Extracted ${mfccFeatures.length}D features for prediction`);
+    
+    // Validate feature dimensions match model expectations
+    if (mfccFeatures.length !== expectedFeatureDim) {
+      throw new Error(`Feature dimension mismatch: extracted ${mfccFeatures.length}D, model expects ${expectedFeatureDim}D`);
+    }
+    
+    const inputTensor = tf.tensor2d([mfccFeatures], [1, mfccFeatures.length]);
+    const prediction = model.predict(inputTensor);
+    const predictionArray = await prediction.array();
 
-  const probabilities = predictionArray[0];
-  const maxValue = Math.max(...probabilities);
-  const maxIndex = probabilities.indexOf(maxValue);
-  
-  // Log prediction confidence for debugging
-  console.log(`Prediction confidence: ${(maxValue * 100).toFixed(2)}%`);
-  console.log(`Top 3 predictions:`, probabilities
-    .map((prob, idx) => ({ class: idx, confidence: prob }))
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, 3));
-  
-//   console.log('Prediction:', predictionArray);
-  return maxIndex;
+    const probabilities = predictionArray[0];
+    const maxValue = Math.max(...probabilities);
+    const maxIndex = probabilities.indexOf(maxValue);
+    
+    // Log prediction confidence for debugging
+    console.log(`Prediction confidence: ${(maxValue * 100).toFixed(2)}%`);
+    console.log(`Top 3 predictions:`, probabilities
+      .map((prob, idx) => ({ class: idx, confidence: prob }))
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 3));
+    
+    // Clean up tensor
+    inputTensor.dispose();
+    prediction.dispose();
+    
+    return maxIndex;
+    
+  } catch (error) {
+    console.error('Prediction error:', error);
+    throw new Error(`Prediction failed: ${error.message}`);
+  }
 }
 
 // Wire the "Train Model" button.
